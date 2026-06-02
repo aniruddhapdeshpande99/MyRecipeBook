@@ -123,3 +123,13 @@ textarea {
   margin-bottom: 1rem;
   font-weight: 500;
 }
+
+.file-upload-zone:hover {
+  border-color: var(--color-sage) !important;
+  background-color: rgba(62, 86, 67, 0.02) !important;
+}
+
+.file-upload-zone.drag-active {
+  border-color: var(--color-sage) !important;
+  background-color: rgba(62, 86, 67, 0.06) !important;
+}

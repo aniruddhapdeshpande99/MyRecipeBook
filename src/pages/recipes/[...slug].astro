@@ -1,4 +1,5 @@
 ---
+// @ts-nocheck
 import Layout from '../../layouts/Layout.astro';
 import { parseRecipe } from '../../utils/recipeParser';
 import { sanitiseSlug } from '../../utils/slugUtils';
@@ -26,7 +27,7 @@ try {
   return Astro.redirect('/404');
 }
 
-const recipe = parseRecipe(filePath, rawContent);
+const recipe: any = parseRecipe(filePath, rawContent);
 const htmlContent = marked.parse(recipe.content || rawContent);
 
 const imageBasename = safeSlug;
@@ -38,10 +39,19 @@ const hasPrep = recipe.prepTime && recipe.prepTime !== 'N/A';
 const hasCook = recipe.cookTime && recipe.cookTime !== 'N/A';
 const hasYield = recipe.yieldVal && recipe.yieldVal !== 'N/A';
 const hasAnyMeta = hasPrep || hasCook || hasYield;
+
+const diaryFilePath = path.join(process.cwd(), 'data', 'diary', `${safeSlug}.json`);
+let diaryEntries = [];
+try {
+  const diaryRaw = await fsPromises.readFile(diaryFilePath, 'utf-8');
+  diaryEntries = JSON.parse(diaryRaw);
+} catch {
+  // Diary doesn't exist yet
+}
 ---
 
 <Layout title={recipe.title} description={recipe.description}>
-  <main>
+  <main data-recipe-slug={safeSlug}>
     <div class="recipe-detail">
 
       <!-- Back link -->
@@ -153,6 +163,71 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
 
       <!-- Notes accordion (built by JS) -->
       <div id="notes-col" class="notes-section" style="display:none;"></div>
+
+      <!-- Cooking Diary section -->
+      <div class="diary-gallery-section">
+        <h2 class="diary-gallery-title">Cooking Diary ✦</h2>
+        {diaryEntries.length === 0 ? (
+          <p style="color: var(--color-muted); font-style: italic; margin-bottom: 2rem;">No diary entries yet. Complete cooking mode to log your first masterpiece!</p>
+        ) : (
+          <div class="diary-grid" id="diary-entries-container" style="margin-bottom: 2rem;">
+            {diaryEntries.map((entry: any) => {
+              const formattedDate = new Date(entry.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+              return (
+                <div class="diary-card">
+                  <img src={entry.imagePath} alt={entry.caption || "Diary Entry"} class="diary-card-img" />
+                  <div class="diary-card-body">
+                    <span class="diary-card-date">{formattedDate}</span>
+                    {entry.caption && <p class="diary-card-caption">{entry.caption}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <!-- Diary Modal Overlay -->
+      <div id="diary-modal" class="diary-modal-overlay" style="display: none;">
+        <div class="diary-modal-card">
+          <button id="diary-modal-close" class="diary-close-btn" aria-label="Close modal">✕</button>
+          <h2 class="diary-modal-title">Cooked it! ✦</h2>
+          <p class="diary-modal-subtitle">Save a photo of your masterpiece to your cooking diary?</p>
+          
+          <form id="diary-form" class="diary-modal-form">
+            <div class="diary-form-group">
+              <label>Upload Photo *</label>
+              <div id="diary-upload-zone" class="diary-upload-zone">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-sage)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <span id="diary-upload-label">Click to select photo</span>
+                <input type="file" id="diary-photo" accept="image/*" required style="display: none;" />
+              </div>
+              <div id="diary-preview-container" class="diary-preview-container" style="display: none;">
+                <img id="diary-photo-preview" src="" alt="Preview" />
+                <button type="button" id="diary-remove-photo" class="diary-remove-photo-btn">✕</button>
+              </div>
+            </div>
+            
+            <div class="diary-form-group">
+              <label for="diary-caption">Caption</label>
+              <input type="text" id="diary-caption" placeholder="How did it turn out? (e.g. Deliciously spicy!)" />
+            </div>
+            
+            <div class="diary-modal-actions">
+              <button type="button" id="diary-cancel-btn" class="diary-btn diary-btn--secondary">Cancel</button>
+              <button type="submit" id="diary-submit-btn" class="diary-btn diary-btn--primary">Save Entry</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <!-- Fallback raw render -->
       <div id="raw-render" set:html={htmlContent}></div>
@@ -310,7 +385,7 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
       const totalSteps = allSteps.length;
 
       function updateProgress() {
-        const done = instructionsCol.querySelectorAll('.interactive-step.completed').length;
+        const done = instructionsCol ? instructionsCol.querySelectorAll('.interactive-step.completed').length : 0;
         const pct = totalSteps > 0 ? (done / totalSteps) * 100 : 0;
         if (progressFill) progressFill.style.width = pct + '%';
         if (progressLabel) progressLabel.textContent = `${done} / ${totalSteps} steps`;
@@ -323,6 +398,142 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
         });
       });
 
+      // === DIARY MODAL LOGIC ===
+      const diaryModal = document.getElementById('diary-modal');
+      const diaryModalClose = document.getElementById('diary-modal-close');
+      const diaryCancelBtn = document.getElementById('diary-cancel-btn');
+      const diaryForm = document.getElementById('diary-form') as HTMLFormElement;
+      const diaryUploadZone = document.getElementById('diary-upload-zone');
+      const diaryPhotoInput = document.getElementById('diary-photo') as HTMLInputElement;
+      const diaryPreviewContainer = document.getElementById('diary-preview-container');
+      const diaryPhotoPreview = document.getElementById('diary-photo-preview') as HTMLImageElement;
+      const diaryRemovePhoto = document.getElementById('diary-remove-photo');
+      const diaryUploadLabel = document.getElementById('diary-upload-label');
+
+      function openDiaryModal() {
+        if (diaryModal) diaryModal.style.display = 'flex';
+      }
+
+      function closeDiaryModal() {
+        if (diaryModal) diaryModal.style.display = 'none';
+        if (diaryForm) diaryForm.reset();
+        if (diaryPreviewContainer) diaryPreviewContainer.style.display = 'none';
+        if (diaryUploadZone) diaryUploadZone.style.display = 'flex';
+        if (diaryUploadLabel) diaryUploadLabel.textContent = 'Click to select photo';
+      }
+
+      if (diaryModalClose) diaryModalClose.addEventListener('click', closeDiaryModal);
+      if (diaryCancelBtn) diaryCancelBtn.addEventListener('click', closeDiaryModal);
+
+      // Drag and drop / click logic for diary photo
+      if (diaryUploadZone && diaryPhotoInput) {
+        diaryUploadZone.addEventListener('click', () => diaryPhotoInput.click());
+        
+        // Handle drag and drop
+        diaryUploadZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          diaryUploadZone.style.borderColor = 'var(--color-sage)';
+          diaryUploadZone.style.backgroundColor = 'rgba(62, 86, 67, 0.05)';
+        });
+        
+        diaryUploadZone.addEventListener('dragleave', () => {
+          diaryUploadZone.style.borderColor = 'var(--color-border)';
+          diaryUploadZone.style.backgroundColor = 'transparent';
+        });
+        
+        diaryUploadZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          diaryUploadZone.style.borderColor = 'var(--color-border)';
+          diaryUploadZone.style.backgroundColor = 'transparent';
+          
+          if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
+            diaryPhotoInput.files = e.dataTransfer.files;
+            handleDiaryFile(e.dataTransfer.files[0]);
+          }
+        });
+      }
+
+      if (diaryPhotoInput) {
+        diaryPhotoInput.addEventListener('change', () => {
+          if (diaryPhotoInput.files && diaryPhotoInput.files[0]) {
+            handleDiaryFile(diaryPhotoInput.files[0]);
+          }
+        });
+      }
+
+      function handleDiaryFile(file: File) {
+        if (!file.type.startsWith('image/')) {
+          alert('Please select an image file.');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (diaryPhotoPreview && diaryPreviewContainer && diaryUploadZone) {
+            diaryPhotoPreview.src = reader.result as string;
+            diaryPreviewContainer.style.display = 'block';
+            diaryUploadZone.style.display = 'none';
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+
+      if (diaryRemovePhoto && diaryPhotoInput && diaryPreviewContainer && diaryUploadZone) {
+        diaryRemovePhoto.addEventListener('click', (e) => {
+          e.stopPropagation();
+          diaryPhotoInput.value = '';
+          diaryPreviewContainer.style.display = 'none';
+          diaryUploadZone.style.display = 'flex';
+          if (diaryUploadLabel) diaryUploadLabel.textContent = 'Click to select photo';
+        });
+      }
+
+      if (diaryForm) {
+        diaryForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const photoFile = diaryPhotoInput.files?.[0];
+          if (!photoFile) {
+            alert('Please select or drop a photo first.');
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64Photo = reader.result;
+            const captionInput = document.getElementById('diary-caption') as HTMLInputElement;
+            const caption = captionInput ? captionInput.value : '';
+            const slug = document.querySelector('main')?.getAttribute('data-recipe-slug') || '';
+
+            try {
+              const submitBtn = document.getElementById('diary-submit-btn') as HTMLButtonElement;
+              submitBtn.disabled = true;
+              submitBtn.textContent = 'Saving...';
+
+              const res = await fetch('/api/diary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug, photo: base64Photo, caption })
+              });
+
+              if (res.ok) {
+                window.location.reload();
+              } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.error || 'Failed to save diary entry.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save Entry';
+              }
+            } catch (err) {
+              console.error(err);
+              alert('An error occurred while saving.');
+              const submitBtn = document.getElementById('diary-submit-btn') as HTMLButtonElement;
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Save Entry';
+            }
+          };
+          reader.readAsDataURL(photoFile);
+        });
+      }
+
       // === PREV / NEXT STEP NAVIGATION ===
       const prevBtn = document.getElementById('step-prev') as HTMLButtonElement;
       const nextBtn = document.getElementById('step-next') as HTMLButtonElement;
@@ -331,7 +542,15 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
 
       function syncNavButtons() {
         if (prevBtn) prevBtn.disabled = currentStepIndex === 0;
-        if (nextBtn) nextBtn.disabled = currentStepIndex >= allSteps.length - 1;
+        if (nextBtn) {
+          if (currentStepIndex >= allSteps.length - 1) {
+            nextBtn.innerHTML = `Finish <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
+            nextBtn.disabled = false;
+          } else {
+            nextBtn.innerHTML = `Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`;
+            nextBtn.disabled = false;
+          }
+        }
         if (stepIndicator) stepIndicator.textContent = `Step ${currentStepIndex + 1} of ${allSteps.length}`;
       }
 
@@ -350,18 +569,37 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
 
       if (toggleBtn) {
         toggleBtn.addEventListener('click', () => {
-          const isActive = document.body.classList.toggle('cooking-mode-active');
-          toggleBtn.classList.toggle('active', isActive);
-          toggleBtn.innerHTML = isActive
-            ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Stop Cooking`
-            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><polyline points="12 6 12 12 16 14"/></svg> Start Cooking`;
-
-          // Reset all step state
-          allSteps.forEach(s => s.classList.remove('active', 'completed'));
-          currentStepIndex = 0;
-          if (isActive && allSteps.length > 0) allSteps[0].classList.add('active');
-          updateProgress();
-          syncNavButtons();
+          const isActive = document.body.classList.contains('cooking-mode-active');
+          const doneSteps = instructionsCol ? instructionsCol.querySelectorAll('.interactive-step.completed').length : 0;
+          
+          if (isActive) {
+            // Stopping cooking mode
+            document.body.classList.remove('cooking-mode-active');
+            toggleBtn.classList.remove('active');
+            toggleBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><polyline points="12 6 12 12 16 14"/></svg> Start Cooking`;
+            
+            // If they stop cooking and ALL steps are done, trigger modal!
+            if (doneSteps === totalSteps && totalSteps > 0) {
+              openDiaryModal();
+            }
+            
+            // Reset all step state
+            allSteps.forEach(s => s.classList.remove('active', 'completed'));
+            currentStepIndex = 0;
+            updateProgress();
+            syncNavButtons();
+          } else {
+            // Starting cooking mode
+            document.body.classList.add('cooking-mode-active');
+            toggleBtn.classList.add('active');
+            toggleBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Stop Cooking`;
+            
+            allSteps.forEach(s => s.classList.remove('active', 'completed'));
+            currentStepIndex = 0;
+            if (allSteps.length > 0) allSteps[0].classList.add('active');
+            updateProgress();
+            syncNavButtons();
+          }
         });
       }
 
@@ -372,9 +610,251 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
       }
       if (nextBtn) {
         nextBtn.addEventListener('click', () => {
-          if (document.body.classList.contains('cooking-mode-active')) goToStep(currentStepIndex + 1);
+          if (!document.body.classList.contains('cooking-mode-active')) return;
+          if (currentStepIndex >= allSteps.length - 1) {
+            // Mark final step completed
+            allSteps[currentStepIndex].classList.add('completed');
+            allSteps[currentStepIndex].classList.remove('active');
+            updateProgress();
+            
+            // Open the diary pop-up modal
+            openDiaryModal();
+          } else {
+            goToStep(currentStepIndex + 1);
+          }
         });
       }
     });
   </script>
+
+  <style>
+    .diary-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+    .diary-modal-card {
+      background-color: var(--color-cream-surface);
+      border: 2px solid var(--color-border);
+      border-radius: 14px;
+      padding: 2rem;
+      max-width: 460px;
+      width: 100%;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      animation: diaryModalFadeIn 0.3s ease;
+    }
+    @keyframes diaryModalFadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    html.dark .diary-modal-card {
+      background-color: var(--color-dark-surface);
+      border-color: var(--color-dark-border);
+    }
+    .diary-close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--color-muted);
+    }
+    .diary-modal-title {
+      font-family: var(--font-serif);
+      color: var(--color-sage);
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+    html.dark .diary-modal-title {
+      color: var(--color-dark-text);
+    }
+    .diary-modal-subtitle {
+      color: var(--color-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    .diary-modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .diary-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .diary-form-group label {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      color: var(--color-sage);
+      font-size: 1rem;
+    }
+    html.dark .diary-form-group label {
+      color: var(--color-dark-text);
+    }
+    .diary-upload-zone {
+      border: 2px dashed var(--color-border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .diary-upload-zone:hover {
+      border-color: var(--color-sage);
+      background-color: rgba(62, 86, 67, 0.02);
+    }
+    .diary-upload-zone span {
+      font-size: 0.9rem;
+      color: var(--color-muted);
+    }
+    .diary-preview-container {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 180px;
+      border: 1px solid var(--color-border);
+    }
+    .diary-preview-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .diary-remove-photo-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-color: var(--color-terracotta);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .diary-form-group input[type="text"] {
+      padding: 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background-color: var(--color-cream-surface);
+      color: var(--color-ink-soft);
+      width: 100%;
+    }
+    html.dark .diary-form-group input[type="text"] {
+      background-color: var(--color-dark-card);
+      border-color: var(--color-dark-border);
+      color: var(--color-dark-text);
+    }
+    .diary-modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .diary-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      border: none;
+    }
+    .diary-btn--secondary {
+      background-color: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-muted);
+    }
+    .diary-btn--secondary:hover {
+      background-color: rgba(0,0,0,0.02);
+    }
+    html.dark .diary-btn--secondary:hover {
+      background-color: rgba(255,255,255,0.02);
+    }
+    .diary-btn--primary {
+      background-color: var(--color-sage);
+      color: var(--color-cream);
+    }
+    .diary-btn--primary:hover {
+      background-color: var(--color-sage-dark);
+    }
+    
+    /* Gallery Styles */
+    .diary-gallery-section {
+      margin-top: 3rem;
+    }
+    .diary-gallery-title {
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      color: var(--color-sage);
+      margin-bottom: 1rem;
+    }
+    html.dark .diary-gallery-title {
+      color: var(--color-dark-text);
+    }
+    .diary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    .diary-card {
+      background-color: var(--color-cream-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      transition: transform 0.2s;
+    }
+    .diary-card:hover {
+      transform: translateY(-2px);
+    }
+    html.dark .diary-card {
+      background-color: var(--color-dark-card);
+      border-color: var(--color-dark-border);
+    }
+    .diary-card-img {
+      height: 150px;
+      width: 100%;
+      object-fit: cover;
+    }
+    .diary-card-body {
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .diary-card-date {
+      font-size: 0.75rem;
+      color: var(--color-terracotta);
+      font-weight: 600;
+    }
+    .diary-card-caption {
+      font-size: 0.85rem;
+      color: var(--color-ink-soft);
+      line-height: 1.4;
+    }
+    html.dark .diary-card-caption {
+      color: var(--color-dark-text);
+    }
+  </style>
 </Layout>

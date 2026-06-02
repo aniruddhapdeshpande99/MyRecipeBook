@@ -15,6 +15,7 @@ export default function RecipeEditor({ existingSlug }) {
   const [ingredients, setIngredients] = useState([{ id: uuid(), item: '', proportion: '' }]);
   const [steps, setSteps] = useState([{ id: uuid(), val: '' }]);
   const [imageUrl, setImageUrl] = useState('');
+  const [isDragActive, setIsDragActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(!!existingSlug);
   const [saveMessage, setSaveMessage] = useState('');
@@ -56,6 +57,44 @@ export default function RecipeEditor({ existingSlug }) {
   const addStep = () => setSteps([...steps, { id: uuid(), val: '' }]);
   const removeStep = (id) => setSteps(steps.filter(s => s.id !== id));
   const updateStep = (id, val) => setSteps(steps.map(s => s.id === id ? { ...s, val } : s));
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  };
+
+  const processFile = (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Please upload an image file.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    e.preventDefault();
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0]);
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -125,7 +164,7 @@ export default function RecipeEditor({ existingSlug }) {
         />
       </div>
 
-      <div class="form-group">
+      <div className="form-group">
         <label>Category</label>
         <input
           type="text"
@@ -136,13 +175,110 @@ export default function RecipeEditor({ existingSlug }) {
       </div>
 
       <div className="form-group">
-        <label>Image URL</label>
-        <input
-          type="text"
-          value={imageUrl}
-          onChange={e => setImageUrl(e.target.value)}
-          placeholder="e.g. /images/aloo-matar.jpg or a web link"
-        />
+        <label>Recipe Image</label>
+        {imageUrl ? (
+          <div className="image-preview-container" style={{
+            position: 'relative',
+            borderRadius: '8px',
+            border: '2px solid var(--color-border)',
+            overflow: 'hidden',
+            backgroundColor: 'var(--color-cream-surface)',
+            maxWidth: '100%',
+            height: '240px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '1rem'
+          }}>
+            <img 
+              src={imageUrl} 
+              alt="Recipe Preview" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setImageUrl('')}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                backgroundColor: 'var(--color-terracotta)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                fontSize: '14px'
+              }}
+              title="Remove image"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div
+            onDragEnter={handleDrag}
+            onDragOver={handleDrag}
+            onDragLeave={handleDrag}
+            onDrop={handleDrop}
+            className={`file-upload-zone ${isDragActive ? 'drag-active' : ''}`}
+            style={{
+              border: '2px dashed var(--color-border)',
+              borderRadius: '8px',
+              padding: '2rem',
+              textAlign: 'center',
+              backgroundColor: isDragActive ? 'rgba(62, 86, 67, 0.05)' : 'transparent',
+              borderColor: isDragActive ? 'var(--color-sage)' : 'var(--color-border)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '160px'
+            }}
+            onClick={() => document.getElementById('recipe-image-input').click()}
+          >
+            <svg 
+              width="36" 
+              height="36" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="var(--color-sage)" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              style={{ marginBottom: '0.75rem', opacity: 0.8 }}
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <p style={{ margin: '0 0 0.5rem 0', fontWeight: '500', color: 'var(--color-sage)' }}>
+              Drag and drop your image here, or <span style={{ textDecoration: 'underline', color: 'var(--color-terracotta)' }}>browse</span>
+            </p>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-muted)' }}>
+              Supports JPG, JPEG, PNG
+            </p>
+            <input
+              id="recipe-image-input"
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="form-group">
