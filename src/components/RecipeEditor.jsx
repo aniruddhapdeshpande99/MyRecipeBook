@@ -5,35 +5,36 @@ export default function RecipeEditor({ existingSlug }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Mains');
   const [description, setDescription] = useState('');
-  const [ingredients, setIngredients] = useState([{ item: '', proportion: '' }]);
-  const [steps, setSteps] = useState(['']);
+  const [ingredients, setIngredients] = useState([{ id: crypto.randomUUID(), item: '', proportion: '' }]);
+  const [steps, setSteps] = useState([{ id: crypto.randomUUID(), val: '' }]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
-  const addIngredient = () => setIngredients([...ingredients, { item: '', proportion: '' }]);
-  const removeIngredient = (idx) => setIngredients(ingredients.filter((_, i) => i !== idx));
-  const updateIngredient = (idx, field, val) => {
-    const updated = [...ingredients];
-    updated[idx][field] = val;
-    setIngredients(updated);
+  const addIngredient = () => setIngredients([...ingredients, { id: crypto.randomUUID(), item: '', proportion: '' }]);
+  const removeIngredient = (id) => setIngredients(ingredients.filter(ing => ing.id !== id));
+  const updateIngredient = (id, field, val) => {
+    setIngredients(ingredients.map(ing => ing.id === id ? { ...ing, [field]: val } : ing));
   };
 
-  const addStep = () => setSteps([...steps, '']);
-  const removeStep = (idx) => setSteps(steps.filter((_, i) => i !== idx));
-  const updateStep = (idx, val) => {
-    const updated = [...steps];
-    updated[idx] = val;
-    setSteps(updated);
+  const addStep = () => setSteps([...steps, { id: crypto.randomUUID(), val: '' }]);
+  const removeStep = (id) => setSteps(steps.filter(s => s.id !== id));
+  const updateStep = (id, val) => {
+    setSteps(steps.map(s => s.id === id ? { ...s, val } : s));
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     setSaveMessage('Saving recipe...');
+    
+    // Strip IDs before sending to API to keep the markdown clean
+    const cleanIngredients = ingredients.map(({ item, proportion }) => ({ item, proportion }));
+    const cleanSteps = steps.map(({ val }) => val);
+
     const res = await fetch('/api/recipes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: existingSlug, title, category, description, ingredients, steps })
+      body: JSON.stringify({ slug: existingSlug, title, category, description, ingredients: cleanIngredients, steps: cleanSteps })
     });
     if (res.ok) {
       setSaveMessage('Recipe saved successfully! Redirecting...');
@@ -62,11 +63,11 @@ export default function RecipeEditor({ existingSlug }) {
 
       <div className="form-group">
         <label>Ingredients</label>
-        {ingredients.map((ing, i) => (
-          <div key={i} className="dynamic-row">
-            <input type="text" placeholder="Item (e.g. Onion)" value={ing.item} onChange={e => updateIngredient(i, 'item', e.target.value)} required />
-            <input type="text" placeholder="Proportion (e.g. 2)" value={ing.proportion} onChange={e => updateIngredient(i, 'proportion', e.target.value)} required />
-            <button type="button" className="remove-btn" onClick={() => removeIngredient(i)}>✕</button>
+        {ingredients.map((ing) => (
+          <div key={ing.id} className="dynamic-row">
+            <input type="text" placeholder="Item (e.g. Onion)" value={ing.item} onChange={e => updateIngredient(ing.id, 'item', e.target.value)} required />
+            <input type="text" placeholder="Proportion (e.g. 2)" value={ing.proportion} onChange={e => updateIngredient(ing.id, 'proportion', e.target.value)} required />
+            <button type="button" className="remove-btn" onClick={() => removeIngredient(ing.id)}>✕</button>
           </div>
         ))}
         <button type="button" className="add-btn" onClick={addIngredient}>+ Add Ingredient</button>
@@ -75,10 +76,10 @@ export default function RecipeEditor({ existingSlug }) {
       <div className="form-group">
         <label>Steps</label>
         {steps.map((step, i) => (
-          <div key={i} className="dynamic-row">
+          <div key={step.id} className="dynamic-row">
             <span className="step-num">{i + 1}.</span>
-            <textarea placeholder="Instruction step..." value={step} onChange={e => updateStep(i, e.target.value)} required />
-            <button type="button" className="remove-btn" onClick={() => removeStep(i)}>✕</button>
+            <textarea placeholder="Instruction step..." value={step.val} onChange={e => updateStep(step.id, e.target.value)} required />
+            <button type="button" className="remove-btn" onClick={() => removeStep(step.id)}>✕</button>
           </div>
         ))}
         <button type="button" className="add-btn" onClick={addStep}>+ Add Step</button>

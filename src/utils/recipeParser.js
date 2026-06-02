@@ -1,67 +1,74 @@
+import matter from 'gray-matter';
+
 /**
  * Parses raw recipe markdown files to extract structured metadata.
- * Handles both the modern frontmatter-less bold metadata format and Jeff's classic ## info list format.
+ * Handles both the modern frontmatter format and classic formats.
  * 
  * @param {string} filePath - Path of the markdown file
  * @param {string} rawContent - Raw text content of the markdown file
  * @returns {object} Structured recipe metadata
  */
 export function parseRecipe(filePath, rawContent) {
-  // Normalize slashes for cross-platform reliability (Windows uses \ in filesystem, Vite uses /)
+  // Normalize slashes for cross-platform reliability
   const normalizedPath = filePath.replace(/\\/g, '/');
   
-  // Extract relative path after /Recipes/
-  const recipesIndex = normalizedPath.lastIndexOf('/Recipes/');
-  let relativePath = '';
-  if (recipesIndex !== -1) {
-    relativePath = normalizedPath.substring(recipesIndex + '/Recipes/'.length);
-  } else {
-    relativePath = normalizedPath.split('/').pop() || '';
-  }
+  // Extract relative path after /recipes/ or /Recipes/
+  const recipesMatch = normalizedPath.match(/\/[Rr]ecipes\/(.+)$/);
+  let relativePath = recipesMatch ? recipesMatch[1] : normalizedPath.split('/').pop() || '';
   
   // Split relative path to identify parent directory (Category) and filename (Slug)
   const parts = relativePath.split('/');
   let category = 'General';
-  let slug = relativePath.replace(/\.md$/, '').toLowerCase();
+  let slug = parts[parts.length - 1].replace(/\.md$/, '').toLowerCase();
   
   if (parts.length > 1) {
     // If inside a folder, that folder name is our category (e.g. "Sandwiches", "Mains")
     category = parts[0];
   }
+
+  // Parse YAML frontmatter
+  const parsed = matter(rawContent);
+  const data = parsed.data || {};
+  const content = parsed.content || rawContent;
   
-  // Extract title (the first top-level header "# Title")
-  const titleMatch = rawContent.match(/^#\s+(.+)$/m);
-  let title = titleMatch ? titleMatch[1].trim() : '';
+  // 1. Extract title
+  let title = data.title;
   if (!title) {
-    // Fallback: derive title from filename
-    const fileName = parts[parts.length - 1].replace(/\.md$/, '');
-    title = fileName
-      .split(/[-_]/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    const titleMatch = content.match(/^#\s+(.+)$/m);
+    if (titleMatch) {
+      title = titleMatch[1].trim();
+    } else {
+      // Fallback: derive title from filename
+      title = slug
+        .split(/[-_]/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
   }
   
-  // Initialize metadata values
-  let prepTime = '';
-  let cookTime = '';
-  let yieldVal = '';
+  // 2. Extract metadata
+  let prepTime = data.prepTime || '';
+  let cookTime = data.cookTime || '';
+  let yieldVal = data.yieldVal || '';
   
-  // 1. Look for bold inline markers (e.g. **Prep time:** 10 Minutes)
-  const prepMatch = rawContent.match(/\*\*Prep\s+[Tt]ime:\*\*\s*(.+)$/m);
-  const cookMatch = rawContent.match(/\*\*Cook\s+[Tt]ime:\*\*\s*(.+)$/m);
-  const yieldMatch = rawContent.match(/\*\*Yield:\*\*\s*(.+)$/m);
+  // Fallback to bold inline markers
+  if (!prepTime || !cookTime || !yieldVal) {
+    const prepMatch = content.match(/\*\*Prep\s+[Tt]ime:\*\*\s*(.+)$/m);
+    const cookMatch = content.match(/\*\*Cook\s+[Tt]ime:\*\*\s*(.+)$/m);
+    const yieldMatch = content.match(/\*\*Yield:\*\*\s*(.+)$/m);
+    
+    if (!prepTime && prepMatch) prepTime = prepMatch[1].replace(/<br\s*\/?>/gi, '').trim();
+    if (!cookTime && cookMatch) cookTime = cookMatch[1].replace(/<br\s*\/?>/gi, '').trim();
+    if (!yieldVal && yieldMatch) yieldVal = yieldMatch[1].replace(/<br\s*\/?>/gi, '').trim();
+  }
   
-  if (prepMatch) prepTime = prepMatch[1].replace(/<br\s*\/?>/gi, '').trim();
-  if (cookMatch) cookTime = cookMatch[1].replace(/<br\s*\/?>/gi, '').trim();
-  if (yieldMatch) yieldVal = yieldMatch[1].replace(/<br\s*\/?>/gi, '').trim();
-  
-  // 2. Fallback to parsing Jeff's ## info block (e.g., list items containing minutes/servings)
+  // Fallback to parsing Jeff's ## info block
   if (!prepTime || !yieldVal) {
-    const infoSectionMatch = rawContent.match(/##\s+info\s*\n([\s\S]*?)(?=\n##|$)/i);
+    const infoSectionMatch = content.match(/##\s+info\s*\n([\s\S]*?)(?=\n##|$)/i);
     if (infoSectionMatch) {
       const infoText = infoSectionMatch[1];
       const infoLines = infoText
-        .split('\n')
+        .split(/\r?\n/)
         .map(l => l.trim())
         .filter(l => l.startsWith('*') || l.startsWith('-'));
       
@@ -82,36 +89,37 @@ export function parseRecipe(filePath, rawContent) {
     }
   }
   
-  // 3. Extract description (first non-empty paragraph after title, skipping metadata lines and HRs)
-  const lines = rawContent.split('\n');
-  let description = '';
-  let foundTitle = false;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.startsWith('# ')) {
-      foundTitle = true;
-      continue;
-    }
-    if (foundTitle && line !== '') {
-      // Skip metadata, horizontal rules, lists, or headers
-      if (
-        line.startsWith('**Prep') || 
-        line.startsWith('**Cook') || 
-        line.startsWith('**Yield') || 
-        line.startsWith('---') || 
-        line.startsWith('##') || 
-        line.startsWith('*') ||
-        line.startsWith('-')
-      ) {
+  // 3. Extract description
+  let description = data.description || '';
+  if (!description) {
+    const lines = content.split(/\r?\n/);
+    let foundTitle = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('# ')) {
+        foundTitle = true;
         continue;
       }
-      description = line;
-      break;
+      if (foundTitle && line !== '') {
+        // Skip metadata, horizontal rules, lists, or headers
+        if (
+          line.startsWith('**Prep') || 
+          line.startsWith('**Cook') || 
+          line.startsWith('**Yield') || 
+          line.startsWith('---') || 
+          line.startsWith('##') || 
+          line.startsWith('*') ||
+          line.startsWith('-')
+        ) {
+          continue;
+        }
+        description = line;
+        break;
+      }
     }
+    // Clean markdown bold/italics from the description
+    description = description.replace(/\*\*|\*|_/g, '').trim();
   }
-  
-  // Clean markdown bold/italics from the description
-  description = description.replace(/\*\*|\*|_/g, '').trim();
   
   if (!description) {
     description = `A delicious recipe for ${title}.`;
@@ -119,11 +127,12 @@ export function parseRecipe(filePath, rawContent) {
   
   return {
     title,
-    category,
+    category: data.category || category,
     slug,
     prepTime: prepTime || 'N/A',
     cookTime: cookTime || 'N/A',
     yieldVal: yieldVal || 'N/A',
-    description
+    description,
+    content // Raw markdown body without frontmatter
   };
 }

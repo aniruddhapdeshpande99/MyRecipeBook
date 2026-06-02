@@ -20,11 +20,15 @@ export async function POST({ request }) {
   const data = await request.json();
   const { slug, title, category, ingredients, steps, description } = data;
   
+  // Sanitize to prevent directory traversal
+  const safeSlug = slug ? slug.replace(/[^a-zA-Z0-9_-]/g, '') : '';
+  const safeTitle = title ? title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') : 'untitled';
+  
   const dataDir = path.join(process.cwd(), 'data', 'recipes');
   await fs.mkdir(dataDir, { recursive: true });
   
   const fileContent = matter.stringify(description || '', { title, category, ingredients, steps });
-  const filename = slug ? `${slug}.md` : `${title.toLowerCase().replace(/\s+/g, '-')}.md`;
+  const filename = safeSlug ? `${safeSlug}.md` : `${safeTitle}.md`;
   
   await fs.writeFile(path.join(dataDir, filename), fileContent);
   return new Response(JSON.stringify({ success: true, slug: filename.replace('.md', '') }), { status: 200 });
