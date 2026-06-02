@@ -2,35 +2,43 @@
 @import "tailwindcss";
 
 /* ============================================================
-   TAILWIND V4 THEME — Sven's Cookbook Design System
-   Sage green + Cream + Terracotta from the app icon
+   COOKBOOK DESIGN SYSTEM — Properly contrasted light + dark
+   Light: Warm cream backgrounds, dark ink text, sage accents
+   Dark:  True dark slate, high-contrast cream text, sage accents
    ============================================================ */
 @theme {
-  --color-sage:          #3E5643;
-  --color-sage-dark:     #2D4A35;
-  --color-sage-hover:    #2F4233;
-  --color-sage-light:    #6C9A76;
-  --color-sage-mist:     rgba(62,86,67,0.08);
+  /* — Accent palette — */
+  --color-sage:          #3E6B4A;   /* Forest sage — main accent */
+  --color-sage-dark:     #2C5237;   /* Darker sage for hover */
+  --color-sage-light:    #7AB88A;   /* Lighter sage for dark mode accents */
+  --color-sage-mist:     rgba(62,107,74,0.09);
 
-  --color-cream:         #F3EFE9; /* Warm light rustic brown-cream */
-  --color-cream-dark:    #E7DEC9; /* Deep clay-cream for hover/borders */
-  --color-cream-surface: #FCFAF6; /* Soft warm ivory-white for card surfaces */
+  --color-terracotta:    #A04020;   /* Rich terracotta for step numbers */
+  --color-terracotta-lt: #E07850;   /* Lighter for dark mode */
 
-  --color-terracotta:    #8C3B1A;
-  --color-terracotta-lt: #D47B5A;
+  /* — Light mode — */
+  --color-bg:            #FAFAF7;   /* Near-white warm background */
+  --color-surface:       #FFFFFF;   /* Pure white card surfaces */
+  --color-surface-alt:   #F2F0EB;   /* Subtle alternative surface */
+  --color-border:        #E0DAD0;   /* Visible warm border */
+  --color-ink:           #111111;   /* Near-black for headings */
+  --color-ink-soft:      #2C2C2C;   /* Dark charcoal for body text */
+  --color-muted:         #5A5A5A;   /* Medium grey for secondary text */
+  --color-placeholder:   #9A9A9A;   /* Light grey for placeholders */
 
-  --color-ink:           #1A1A1A; /* Crisp deep charcoal for titles */
-  --color-ink-soft:      #2A2A2A; /* Dark ink for paragraphs */
-  --color-muted:         #5C6B5F;
-  --color-border:        #DFD9CE; /* Spaced warm borders */
+  /* — Dark mode — */
+  --color-dark-bg:       #141414;   /* True dark background — not brown */
+  --color-dark-surface:  #1E1E1E;   /* Card/surface background */
+  --color-dark-surface-alt: #252525; /* Slightly lighter surface */
+  --color-dark-border:   #333333;   /* Visible border in dark */
+  --color-dark-text:     #F0EDE8;   /* Warm cream — main text */
+  --color-dark-muted:    #A8A8A8;   /* Lighter grey for secondary text */
+  --color-dark-placeholder: #666666;
 
-  /* Dark mode palette — rustic warm umber & espresso theme */
-  --color-dark-bg:       #2A1C14; /* Deep warm espresso brown */
-  --color-dark-surface:  #36251B; /* Rustic dark umber surface */
-  --color-dark-card:     #422E22; /* Warm clay-brown card background */
-  --color-dark-border:   #5C4334; /* Muted terracotta-brown border */
-  --color-dark-text:     #F3EFE9; /* Warm cream text */
-  --color-dark-muted:    #C2B2A3; /* Soft clay-beige for secondary text */
+  /* Semantic aliases used throughout the stylesheet */
+  --color-cream:         #F0EDE8;   /* Used for text on dark backgrounds */
+  --color-cream-dark:    #E0DAD0;   /* Alias for border */
+  --color-cream-surface: #FFFFFF;   /* Alias for light surface */
 
   --font-serif: 'Lora', Georgia, serif;
   --font-sans:  'Inter', system-ui, sans-serif;
@@ -44,11 +52,81 @@
    ============================================================ */
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Explicit :root declarations — ensures vars work regardless of Tailwind @theme resolution */
+:root {
+  --color-sage:             #3E6B4A;
+  --color-sage-dark:        #2C5237;
+  --color-sage-light:       #7AB88A;
+  --color-sage-mist:        rgba(62,107,74,0.09);
+  --color-terracotta:       #A04020;
+  --color-terracotta-lt:    #E07850;
+
+  /* Light mode */
+  --color-bg:               #FAFAF7;
+  --color-surface:          #FFFFFF;
+  --color-surface-alt:      #F2F0EB;
+  --color-border:           #E0DAD0;
+  --color-ink:              #111111;
+  --color-ink-soft:         #2C2C2C;
+  --color-muted:            #5A5A5A;
+  --color-placeholder:      #9A9A9A;
+
+  /* Shared aliases */
+  --color-cream:            #F0EDE8;
+  --color-cream-dark:       #E0DAD0;
+  --color-cream-surface:    #FFFFFF;
+
+  --font-serif: 'Lora', Georgia, serif;
+  --font-sans:  'Inter', system-ui, sans-serif;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+}
+
+/* Dark mode overrides via class (JS toggle) */
+html.dark {
+  --color-bg:               #141414;
+  --color-surface:          #1E1E1E;
+  --color-surface-alt:      #252525;
+  --color-border:           #333333;
+  --color-ink:              #F0EDE8;
+  --color-ink-soft:         #E0DDD8;
+  --color-muted:            #A8A8A8;
+  --color-placeholder:      #666666;
+  --color-cream-surface:    #1E1E1E;
+  --color-dark-bg:          #141414;
+  --color-dark-surface:     #1E1E1E;
+  --color-dark-surface-alt: #252525;
+  --color-dark-border:      #333333;
+  --color-dark-text:        #F0EDE8;
+  --color-dark-muted:       #A8A8A8;
+}
+
+/* Dark mode overrides via OS preference */
+@media (prefers-color-scheme: dark) {
+  html:not(.light) {
+    --color-bg:               #141414;
+    --color-surface:          #1E1E1E;
+    --color-surface-alt:      #252525;
+    --color-border:           #333333;
+    --color-ink:              #F0EDE8;
+    --color-ink-soft:         #E0DDD8;
+    --color-muted:            #A8A8A8;
+    --color-placeholder:      #666666;
+    --color-cream-surface:    #1E1E1E;
+    --color-dark-bg:          #141414;
+    --color-dark-surface:     #1E1E1E;
+    --color-dark-surface-alt: #252525;
+    --color-dark-border:      #333333;
+    --color-dark-text:        #F0EDE8;
+    --color-dark-muted:       #A8A8A8;
+  }
+}
+
 html { scroll-behavior: smooth; }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-cream);
+  background-color: var(--color-bg);
   color: var(--color-ink-soft);
   margin: 0;
   padding: 0;
@@ -112,8 +190,6 @@ a:hover { color: var(--color-sage-dark); }
   color: var(--color-cream);
   flex-shrink: 0;
   transition: transform 0.3s ease;
-  border-radius: 22%;
-  overflow: hidden;
 }
 .site-logo:hover .logo-icon { transform: rotate(-8deg) scale(1.08); }
 
@@ -296,14 +372,14 @@ main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
   padding: 0.9rem 1.25rem;
   font-size: 1rem;
   font-family: var(--font-sans);
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: 12px;
   color: var(--color-ink-soft);
   box-shadow: 0 2px 8px rgba(62,86,67,0.06);
   transition: all 0.2s ease;
 }
-.search-input::placeholder { color: var(--color-muted); }
+.search-input::placeholder { color: var(--color-placeholder); }
 .search-input:focus {
   outline: none;
   border-color: var(--color-sage);
@@ -334,7 +410,7 @@ html.dark .search-input {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--color-sage);
+  color: var(--color-muted); /* Neutral grey — readable & not competing with content */
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -360,7 +436,7 @@ html.dark .search-input {
   position: relative;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   overflow: hidden;
@@ -379,17 +455,17 @@ html.dark .search-input {
    MANUAL DARK MODE CLASSPATH MAPS
    ============================================================ */
 html.dark .recipe-card {
-  background-color: var(--color-dark-card);
+  background-color: var(--color-dark-surface);
   border-color: var(--color-dark-border);
 }
 html.dark .recipe-card h3 { color: var(--color-dark-text); }
 html.dark .recipe-card .desc { color: var(--color-dark-muted); }
 html.dark .interactive-step {
-  background-color: var(--color-dark-card);
+  background-color: var(--color-dark-surface);
   border-color: var(--color-dark-border);
 }
 html.dark .accordion-item {
-  background-color: var(--color-dark-card);
+  background-color: var(--color-dark-surface);
   border-color: var(--color-dark-border);
 }
 html.dark .accordion-trigger { color: var(--color-dark-text); }
@@ -405,7 +481,7 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
 
 @media (prefers-color-scheme: dark) {
   html:not(.light) .recipe-card {
-    background-color: var(--color-dark-card);
+    background-color: var(--color-dark-surface);
     border-color: var(--color-dark-border);
   }
 }
@@ -441,7 +517,7 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
 
 .recipe-card .desc {
   font-size: 0.875rem;
-  color: var(--color-ink-soft);
+  color: var(--color-muted); /* Medium grey — secondary text, clearly readable */
   line-height: 1.5;
   margin-bottom: auto;
   padding-bottom: 0.75rem;
@@ -687,7 +763,7 @@ html.dark .recipe-meta-inline { border-color: var(--color-dark-border); }
   gap: 1rem;
   padding: 1rem;
   border-radius: 10px;
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -696,7 +772,7 @@ html.dark .recipe-meta-inline { border-color: var(--color-dark-border); }
 
 @media (prefers-color-scheme: dark) {
   html:not(.light) .interactive-step {
-    background-color: var(--color-dark-card);
+    background-color: var(--color-dark-surface);
     border-color: var(--color-dark-border);
   }
 }
@@ -782,11 +858,11 @@ html.dark .recipe-meta-inline { border-color: var(--color-dark-border); }
   border-radius: 10px;
   margin-bottom: 0.5rem;
   overflow: hidden;
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
 }
 @media (prefers-color-scheme: dark) {
   html:not(.light) .accordion-item {
-    background-color: var(--color-dark-card);
+    background-color: var(--color-dark-surface);
     border-color: var(--color-dark-border);
   }
 }
@@ -838,7 +914,7 @@ html.dark .recipe-meta-inline { border-color: var(--color-dark-border); }
    RECIPE EDITOR
    ============================================================ */
 .recipe-editor {
-  background: var(--color-cream-surface);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 2rem;
@@ -879,7 +955,7 @@ html.dark .recipe-editor h1 {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--color-sage-light); /* Refined sage light for better readability */
+  color: var(--color-sage); /* Dark sage — readable on white in light mode */
 }
 
 .form-group input,
@@ -889,7 +965,7 @@ html.dark .recipe-editor h1 {
   padding: 0.75rem 1rem;
   font-size: 1rem;
   font-family: var(--font-sans);
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-ink-soft);
@@ -907,7 +983,7 @@ html.dark .recipe-editor h1 {
   html:not(.light) .form-group input,
   html:not(.light) .form-group textarea,
   html:not(.light) .form-group select {
-    background-color: var(--color-dark-card);
+    background-color: var(--color-dark-surface);
     border-color: var(--color-dark-border);
     color: var(--color-dark-text);
   }
@@ -921,7 +997,7 @@ html.dark .recipe-editor h1 {
 html.dark .form-group input,
 html.dark .form-group textarea,
 html.dark .form-group select {
-  background-color: var(--color-dark-card);
+  background-color: var(--color-dark-surface);
   border-color: var(--color-dark-border);
   color: var(--color-dark-text);
 }
@@ -956,7 +1032,7 @@ html.dark .form-group textarea:focus {
   min-height: 48px;
   padding: 0.6rem 0.85rem;
   font-size: 0.95rem;
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-ink-soft);
@@ -971,14 +1047,14 @@ html.dark .form-group textarea:focus {
 @media (prefers-color-scheme: dark) {
   html:not(.light) .dynamic-row input,
   html:not(.light) .dynamic-row textarea {
-    background-color: var(--color-dark-card);
+    background-color: var(--color-dark-surface);
     border-color: var(--color-dark-border);
     color: var(--color-dark-text);
   }
 }
 html.dark .dynamic-row input,
 html.dark .dynamic-row textarea {
-  background-color: var(--color-dark-card);
+  background-color: var(--color-dark-surface);
   border-color: var(--color-dark-border);
   color: var(--color-dark-text);
 }
@@ -1206,7 +1282,7 @@ html.dark .recipe-card__thumb-placeholder {
   padding: 0.6rem 2.2rem 0.6rem 1rem;
   font-size: 0.875rem;
   font-family: var(--font-sans);
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-ink-soft);
@@ -1221,7 +1297,7 @@ html.dark .recipe-card__thumb-placeholder {
 }
 .filter-select:focus { outline: none; border-color: var(--color-sage); box-shadow: 0 0 0 3px rgba(62,86,67,0.1); }
 .filter-select option {
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
   color: var(--color-ink-soft);
 }
 @media (prefers-color-scheme: dark) {
@@ -1282,7 +1358,7 @@ html.dark .filter-select option {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--color-sage);
-  background-color: var(--color-cream-surface);
+  background-color: var(--color-surface);
   border: 1.5px solid var(--color-sage);
   border-radius: 8px;
   cursor: pointer;
