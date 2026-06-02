@@ -1,6 +1,6 @@
 {
-  "name": "The Modern Cookbook",
-  "short_name": "MyCookbook",
+  "name": "Sven's CookBook",
+  "short_name": "Sven's CookBook",
   "description": "A beautiful, static-site generated cookbook for tracking personal recipes.",
   "start_url": "/",
   "display": "standalone",

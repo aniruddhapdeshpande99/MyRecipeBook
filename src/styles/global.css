@@ -6,8 +6,8 @@
   --bg-color: #FAFAFA;
   --text-color: #2D2D2D;
   --text-muted: #6E6E6E;
-  --accent-color: #A34E36; /* Muted Terracotta */
-  --accent-light: #F7EFEB;
+  --accent-color: #526A59; /* Sage/Rosemary Green */
+  --accent-light: #F0F4F1;
   --card-bg: #FFFFFF;
   --card-border: #EBEBEB;
   
@@ -17,8 +17,8 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   
   /* Cooking Mode Highlights */
-  --highlight-bg: #FCF8E3;
-  --highlight-border: #F3E5AB;
+  --highlight-bg: #EDF3EE;
+  --highlight-border: #C4D7C8;
 }
 
 /* Base Resets */
