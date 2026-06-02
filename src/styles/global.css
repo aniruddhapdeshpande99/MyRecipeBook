@@ -112,6 +112,8 @@ a:hover { color: var(--color-sage-dark); }
   color: var(--color-cream);
   flex-shrink: 0;
   transition: transform 0.3s ease;
+  border-radius: 22%;
+  overflow: hidden;
 }
 .site-logo:hover .logo-icon { transform: rotate(-8deg) scale(1.08); }
 
