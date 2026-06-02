@@ -836,6 +836,14 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
   margin-bottom: 1.5rem;
   color: var(--color-ink);
 }
+html.dark .recipe-editor h1 {
+  color: var(--color-dark-text);
+}
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .recipe-editor h1 {
+    color: var(--color-dark-text);
+  }
+}
 
 .form-group {
   display: flex;
@@ -845,11 +853,11 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
 }
 
 .form-group label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--color-sage);
+  color: var(--color-sage-light); /* Refined sage light for better readability */
 }
 
 .form-group input,
@@ -859,11 +867,11 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
   padding: 0.75rem 1rem;
   font-size: 1rem;
   font-family: var(--font-sans);
-  background-color: var(--color-cream);
+  background-color: var(--color-cream-surface);
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-ink-soft);
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
   min-height: 48px;
 }
 .form-group input:focus,
@@ -871,6 +879,35 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
   outline: none;
   border-color: var(--color-sage);
   box-shadow: 0 0 0 3px rgba(62,86,67,0.1);
+  background-color: #FFF;
+}
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .form-group input,
+  html:not(.light) .form-group textarea,
+  html:not(.light) .form-group select {
+    background-color: var(--color-dark-card);
+    border-color: var(--color-dark-border);
+    color: var(--color-dark-text);
+  }
+  html:not(.light) .form-group input:focus,
+  html:not(.light) .form-group textarea:focus {
+    border-color: var(--color-sage-light);
+    box-shadow: 0 0 0 3px rgba(108,154,118,0.15);
+    background-color: var(--color-dark-surface);
+  }
+}
+html.dark .form-group input,
+html.dark .form-group textarea,
+html.dark .form-group select {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  color: var(--color-dark-text);
+}
+html.dark .form-group input:focus,
+html.dark .form-group textarea:focus {
+  border-color: var(--color-sage-light);
+  box-shadow: 0 0 0 3px rgba(108,154,118,0.15);
+  background-color: var(--color-dark-surface);
 }
 
 .form-group textarea { min-height: 90px; resize: vertical; }
@@ -897,22 +934,38 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
   min-height: 48px;
   padding: 0.6rem 0.85rem;
   font-size: 0.95rem;
-  background-color: var(--color-cream);
+  background-color: var(--color-cream-surface);
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-ink-soft);
   font-family: var(--font-sans);
+  transition: all 0.2s ease;
 }
 .dynamic-row input:focus, .dynamic-row textarea:focus {
   outline: none;
   border-color: var(--color-sage);
+  background-color: #FFF;
+}
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .dynamic-row input,
+  html:not(.light) .dynamic-row textarea {
+    background-color: var(--color-dark-card);
+    border-color: var(--color-dark-border);
+    color: var(--color-dark-text);
+  }
+}
+html.dark .dynamic-row input,
+html.dark .dynamic-row textarea {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+  color: var(--color-dark-text);
 }
 .dynamic-row textarea { resize: vertical; min-height: 72px; }
 
 .step-num {
   width: 32px;
   height: 32px;
-  background-color: var(--color-sage);
+  background-color: var(--color-terracotta); /* Rustic Terracotta for step index */
   color: var(--color-cream);
   border-radius: 50%;
   display: flex;
@@ -950,11 +1003,29 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
   width: 100%;
   margin-top: 0.25rem;
   font-weight: 600;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s;
 }
 .add-btn:hover {
   border-color: var(--color-sage);
   background-color: var(--color-sage-mist);
+}
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .add-btn {
+    border-color: var(--color-dark-border);
+    color: var(--color-sage-light);
+  }
+  html:not(.light) .add-btn:hover {
+    border-color: var(--color-sage-light);
+    background-color: rgba(108,154,118,0.1);
+  }
+}
+html.dark .add-btn {
+  border-color: var(--color-dark-border);
+  color: var(--color-sage-light);
+}
+html.dark .add-btn:hover {
+  border-color: var(--color-sage-light);
+  background-color: rgba(108,154,118,0.1);
 }
 
 .save-btn {
@@ -1107,7 +1178,7 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
   margin: 1.5rem 0 0;
 }
 .filter-select {
-  padding: 0.6rem 2rem 0.6rem 0.9rem;
+  padding: 0.6rem 2.2rem 0.6rem 1rem;
   font-size: 0.875rem;
   font-family: var(--font-sans);
   background-color: var(--color-cream-surface);
@@ -1116,15 +1187,39 @@ html.dark .recipe-card__download { color: var(--color-sage-light); }
   color: var(--color-ink-soft);
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235C6B5F' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233E5643' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.6rem center;
-  background-size: 16px;
-  transition: border-color 0.2s ease;
+  background-position: right 0.75rem center;
+  background-size: 14px;
+  transition: all 0.2s ease;
+  font-weight: 600;
 }
-.filter-select:focus { outline: none; border-color: var(--color-sage); }
+.filter-select:focus { outline: none; border-color: var(--color-sage); box-shadow: 0 0 0 3px rgba(62,86,67,0.1); }
+.filter-select option {
+  background-color: var(--color-cream-surface);
+  color: var(--color-ink-soft);
+}
 @media (prefers-color-scheme: dark) {
-  .filter-select { background-color: var(--color-dark-surface); border-color: var(--color-dark-border); color: var(--color-dark-text); }
+  html:not(.light) .filter-select {
+    background-color: var(--color-dark-surface);
+    border-color: var(--color-dark-border);
+    color: var(--color-dark-text);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236C9A76' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  }
+  html:not(.light) .filter-select option {
+    background-color: var(--color-dark-surface);
+    color: var(--color-dark-text);
+  }
+}
+html.dark .filter-select {
+  background-color: var(--color-dark-surface);
+  border-color: var(--color-dark-border);
+  color: var(--color-dark-text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236C9A76' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+html.dark .filter-select option {
+  background-color: var(--color-dark-surface);
+  color: var(--color-dark-text);
 }
 .filter-clear {
   font-size: 0.78rem;
