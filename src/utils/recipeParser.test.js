@@ -55,9 +55,22 @@ yieldVal: "6 servings"
      const result1 = parseRecipe('/data/recipes/Desserts/cake.md', '# Cake');
      const result2 = parseRecipe('/Recipes/Desserts/cake.md', '# Cake');
      const result3 = parseRecipe('C:\\Users\\Bob\\data\\recipes\\Desserts\\cake.md', '# Cake');
-     
+
      expect(result1.category).toBe('Desserts');
      expect(result2.category).toBe('Desserts');
      expect(result3.category).toBe('Desserts');
+  });
+
+  it('derives slug correctly from hyphenated filename with mixed case', () => {
+    const result = parseRecipe(
+      'data/recipes/Desi-Italian-Creamy-Mushroom-Bagel.md',
+      '# Desi Italian Creamy Mushroom Bagel'
+    );
+    expect(result.slug).toBe('desi-italian-creamy-mushroom-bagel');
+  });
+
+  it('assigns General category to flat recipes not in a subdirectory', () => {
+    const result = parseRecipe('data/recipes/some-recipe.md', '# Some Recipe');
+    expect(result.category).toBe('General');
   });
 });
