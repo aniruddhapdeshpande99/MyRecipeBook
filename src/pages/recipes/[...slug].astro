@@ -118,6 +118,23 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
         <span class="cooking-progress__label" id="progress-label">0 / 0 steps</span>
       </div>
 
+      <!-- Step navigation — CSS shows/hides based on .cooking-mode-active on body -->
+      <div class="step-nav" id="step-nav">
+        <button class="step-nav__btn" id="step-prev" type="button" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Prev
+        </button>
+        <span class="step-nav__indicator" id="step-indicator">Step 1</span>
+        <button class="step-nav__btn" id="step-next" type="button">
+          Next
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+
       <!-- Structured Two-Column Layout (built by JS) -->
       <div class="recipe-columns" id="structured-layout" style="display:none;">
         <div id="ingredients-col">
@@ -303,6 +320,49 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
           if (isActive && allSteps.length > 0) allSteps[0].classList.add('active');
           updateProgress();
         });
+      }
+
+      // === PREV / NEXT STEP NAVIGATION ===
+      const prevBtn = document.getElementById('step-prev') as HTMLButtonElement;
+      const nextBtn = document.getElementById('step-next') as HTMLButtonElement;
+      const stepIndicator = document.getElementById('step-indicator');
+      let currentStepIndex = 0;
+
+      function syncNavButtons() {
+        if (prevBtn) prevBtn.disabled = currentStepIndex === 0;
+        if (nextBtn) nextBtn.disabled = currentStepIndex >= allSteps.length - 1;
+        if (stepIndicator) stepIndicator.textContent = `Step ${currentStepIndex + 1} of ${allSteps.length}`;
+      }
+
+      function goToStep(index: number) {
+        if (index < 0 || index >= allSteps.length) return;
+        currentStepIndex = index;
+        allSteps.forEach((s, i) => {
+          s.classList.remove('active', 'completed');
+          if (i < index) s.classList.add('completed');
+        });
+        allSteps[currentStepIndex].classList.add('active');
+        allSteps[currentStepIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        updateProgress();
+        syncNavButtons();
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          if (document.body.classList.contains('cooking-mode-active')) goToStep(currentStepIndex - 1);
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+          if (document.body.classList.contains('cooking-mode-active')) goToStep(currentStepIndex + 1);
+        });
+      }
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+          currentStepIndex = 0;
+          syncNavButtons();
+        }, true);
       }
     });
   </script>
