@@ -7,6 +7,8 @@ export default function RecipeEditor({ existingSlug }) {
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState([{ item: '', proportion: '' }]);
   const [steps, setSteps] = useState(['']);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   const addIngredient = () => setIngredients([...ingredients, { item: '', proportion: '' }]);
   const removeIngredient = (idx) => setIngredients(ingredients.filter((_, i) => i !== idx));
@@ -26,16 +28,21 @@ export default function RecipeEditor({ existingSlug }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
+    setSaveMessage('Saving recipe...');
     const res = await fetch('/api/recipes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug: existingSlug, title, category, description, ingredients, steps })
     });
     if (res.ok) {
-      alert('Recipe Saved!');
-      window.location.href = '/';
+      setSaveMessage('Recipe saved successfully! Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
     } else {
-      alert('Error saving recipe');
+      setSaveMessage('Error saving recipe. Please try again.');
+      setIsSaving(false);
     }
   };
 
@@ -77,7 +84,10 @@ export default function RecipeEditor({ existingSlug }) {
         <button type="button" className="add-btn" onClick={addStep}>+ Add Step</button>
       </div>
 
-      <button type="submit" className="save-btn">Save Cookbook Recipe</button>
+      {saveMessage && <div className="save-message">{saveMessage}</div>}
+      <button type="submit" className="save-btn" disabled={isSaving}>
+        {isSaving ? 'Saving...' : 'Save Cookbook Recipe'}
+      </button>
     </form>
   );
 }
