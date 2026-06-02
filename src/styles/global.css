@@ -56,10 +56,14 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
-  body {
+  html:not(.light) body {
     background-color: var(--color-dark-bg);
     color: var(--color-dark-text);
   }
+}
+html.dark body {
+  background-color: var(--color-dark-bg);
+  color: var(--color-dark-text);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -69,7 +73,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (prefers-color-scheme: dark) {
-  h1, h2, h3, h4, h5, h6 { color: var(--color-dark-text); }
+  html:not(.light) h1, html:not(.light) h2, html:not(.light) h3, html:not(.light) h4, html:not(.light) h5, html:not(.light) h6 {
+    color: var(--color-dark-text);
+  }
+}
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+  color: var(--color-dark-text);
 }
 
 a { color: var(--color-sage); text-decoration: none; }
@@ -155,6 +164,38 @@ a:hover { color: var(--color-sage-dark); }
   .site-header { padding: 0.75rem 1rem; }
   .logo-name { font-size: 1rem; }
   .nav-link:not(.nav-link--cta) { display: none; }
+}
+
+.theme-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--color-cream);
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, transform 0.2s;
+}
+.theme-toggle-btn:hover {
+  background-color: rgba(255,255,255,0.1);
+  transform: scale(1.08);
+}
+.theme-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+}
+/* Show sun in dark mode, moon in light mode */
+.theme-toggle-btn .sun-icon { display: none; }
+.theme-toggle-btn .moon-icon { display: block; }
+
+html.dark .theme-toggle-btn .sun-icon { display: block; }
+html.dark .theme-toggle-btn .moon-icon { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .theme-toggle-btn .sun-icon { display: block; }
+  html:not(.light) .theme-toggle-btn .moon-icon { display: none; }
 }
 
 /* ============================================================
@@ -249,11 +290,16 @@ main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 }
 
 @media (prefers-color-scheme: dark) {
-  .search-input {
+  html:not(.light) .search-input {
     background-color: var(--color-dark-surface);
     border-color: var(--color-dark-border);
     color: var(--color-dark-text);
   }
+}
+html.dark .search-input {
+  background-color: var(--color-dark-surface);
+  border-color: var(--color-dark-border);
+  color: var(--color-dark-text);
 }
 
 /* ============================================================
@@ -308,8 +354,36 @@ main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
   border-color: var(--color-sage-light);
 }
 
+/* ============================================================
+   MANUAL DARK MODE CLASSPATH MAPS
+   ============================================================ */
+html.dark .recipe-card {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+}
+html.dark .recipe-card h3 { color: var(--color-dark-text); }
+html.dark .recipe-card .desc { color: var(--color-dark-muted); }
+html.dark .interactive-step {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+}
+html.dark .accordion-item {
+  background-color: var(--color-dark-card);
+  border-color: var(--color-dark-border);
+}
+html.dark .accordion-trigger { color: var(--color-dark-text); }
+html.dark .recipe-editor {
+  background: var(--color-dark-surface);
+  border-color: var(--color-dark-border);
+}
+html.dark .recipe-detail h1 { color: var(--color-dark-text); }
+html.dark .recipe-description { color: var(--color-dark-muted); }
+html.dark .back-link { color: var(--color-sage-light); }
+html.dark .back-link:hover { color: var(--color-dark-text); }
+html.dark .recipe-card__download { color: var(--color-sage-light); }
+
 @media (prefers-color-scheme: dark) {
-  .recipe-card {
+  html:not(.light) .recipe-card {
     background-color: var(--color-dark-card);
     border-color: var(--color-dark-border);
   }
