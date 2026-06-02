@@ -55,3 +55,169 @@ a {
   color: var(--accent-green);
   text-decoration: none;
 }
+
+/* Premium Button Styles */
+.recipe-actions {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-main);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--accent-green);
+  transform: translateY(-1px);
+}
+
+.action-btn svg {
+  stroke: var(--accent-green);
+}
+
+/* Search Input Template */
+.search-container {
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+.search-input {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  font-size: 1.1rem;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-main);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-green);
+  box-shadow: 0 4px 15px rgba(62, 86, 67, 0.1);
+}
+
+/* Grid & Cards Template */
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.recipe-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  color: var(--text-main);
+}
+
+.recipe-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+  border-color: var(--accent-green);
+}
+
+.recipe-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-family: 'Lora', serif;
+  font-size: 1.3rem;
+  color: var(--text-heading);
+}
+
+.recipe-card .desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 1.5rem;
+}
+
+/* Metadata Details Box */
+.metadata-box {
+  display: flex;
+  gap: 2rem;
+  padding: 1.25rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin: 1.5rem 0;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.meta-value {
+  font-family: 'Lora', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent-terracotta);
+}
+
+/* Interactive Cooking Mode & Two-Column Layout */
+.recipe-columns {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 3rem;
+  margin-top: 2rem;
+}
+
+.interactive-step {
+  padding: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+}
+
+.cooking-mode-active .interactive-step.active {
+  background-color: var(--bg-hover);
+  border-left: 4px solid var(--accent-green);
+  padding-left: calc(0.75rem - 4px);
+  font-weight: 500;
+}
+
+.cooking-mode-active .interactive-step.completed {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+@media (max-width: 768px) {
+  .recipe-columns {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
