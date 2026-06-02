@@ -2,17 +2,22 @@
 import Layout from '../layouts/Layout.astro';
 import { parseRecipe } from '../utils/recipeParser';
 
-// Load all recipes as raw markdown content at build time using Vite glob
-const rawRecipes = import.meta.glob('../../Recipes/**/*.md', { 
-  eager: true, 
-  query: '?raw', 
-  import: 'default' 
-}) as Record<string, string>;
+import fs from 'node:fs';
+import path from 'node:path';
 
-// Parse all recipes
-const recipes = Object.entries(rawRecipes).map(([path, content]) => {
-  return parseRecipe(path, content);
-});
+// Load recipes dynamically at runtime
+const dataDir = path.join(process.cwd(), 'data', 'recipes');
+let recipes: any[] = [];
+
+try {
+  const files = fs.readdirSync(dataDir);
+  recipes = files.filter(f => f.endsWith('.md')).map(f => {
+    const rawContent = fs.readFileSync(path.join(dataDir, f), 'utf-8');
+    return parseRecipe(path.join(dataDir, f), rawContent);
+  });
+} catch (e) {
+  // Directory might not exist yet or be empty
+}
 
 // Group recipes by category
 const groupedRecipes: Record<string, typeof recipes> = {};

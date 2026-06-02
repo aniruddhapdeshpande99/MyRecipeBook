@@ -4,52 +4,27 @@ import { parseRecipe } from '../../utils/recipeParser';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export async function getStaticPaths() {
-  // Load raw text contents to extract metadata
-  const rawRecipes = import.meta.glob('../../../Recipes/**/*.md', { 
-    eager: true, 
-    query: '?raw', 
-    import: 'default' 
-  }) as Record<string, string>;
-  
-  // Load compiled modules to obtain the Content component
-  const compiledRecipes = import.meta.glob('../../../Recipes/**/*.md', { 
-    eager: true 
-  }) as Record<string, any>;
+import { marked } from 'marked';
 
-  return Object.entries(rawRecipes).map(([filePath, rawContent]) => {
-    const parsed = parseRecipe(filePath, rawContent);
-    const compiledModule = compiledRecipes[filePath];
-    
-    // Extract file basename for image association (e.g. "aloo-matar" from "aloo-matar.md")
-    // Slashes are normalized to /
-    const cleanPath = filePath.replace(/\\/g, '/');
-    const fileBasename = cleanPath.split('/').pop()?.replace(/\.md$/, '') || '';
-    const imageBasename = fileBasename.toLowerCase();
-    
-    // Check if corresponding JPG exists under public/images/
-    const publicImagePath = path.join(process.cwd(), 'public', 'images', `${imageBasename}.jpg`);
-    const hasImage = fs.existsSync(publicImagePath);
-    const imagePath = hasImage ? `/images/${imageBasename}.jpg` : null;
+const { slug } = Astro.params;
 
-    return {
-      params: { slug: parsed.slug },
-      props: { 
-        recipe: parsed, 
-        Content: compiledModule.Content,
-        imagePath
-      }
-    };
-  });
+const dataDir = path.join(process.cwd(), 'data', 'recipes');
+const targetFile = `${slug}.md`;
+const filePath = path.join(dataDir, targetFile);
+
+if (!slug || !fs.existsSync(filePath)) {
+  return Astro.redirect('/404');
 }
 
-interface Props {
-  recipe: ReturnType<typeof parseRecipe>;
-  Content: any;
-  imagePath: string | null;
-}
+const rawContent = fs.readFileSync(filePath, 'utf-8');
+const recipe = parseRecipe(filePath, rawContent);
 
-const { recipe, Content, imagePath } = Astro.props;
+const htmlContent = marked.parse(recipe.content || rawContent);
+
+const imageBasename = slug.toLowerCase();
+const publicImagePath = path.join(process.cwd(), 'public', 'images', `${imageBasename}.jpg`);
+const hasImage = fs.existsSync(publicImagePath);
+const imagePath = hasImage ? `/images/${imageBasename}.jpg` : null;
 ---
 
 <Layout title={recipe.title} description={recipe.description}>
@@ -119,9 +94,7 @@ const { recipe, Content, imagePath } = Astro.props;
     </div>
 
     <!-- Fallback Content Container (Visible if JS is disabled) -->
-    <div id="raw-render">
-      <Content />
-    </div>
+    <div id="raw-render" set:html={htmlContent}></div>
   </div>
 
   <script>
