@@ -58,7 +58,7 @@ export async function GET({ request }: { request: Request }) {
 
 export async function POST({ request }: { request: Request }) {
   const data = await request.json();
-  const { slug, title, category, ingredients, steps, description, prepTime, cookTime, yieldVal } = data;
+  const { slug, title, category, ingredients, steps, description, imageUrl, prepTime, cookTime, yieldVal } = data;
   const safeSlug = slug ? sanitiseSlug(slug) : '';
   const safeTitle = title
     ? title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
@@ -66,7 +66,7 @@ export async function POST({ request }: { request: Request }) {
   const dataDir = path.join(process.cwd(), 'data', 'recipes');
   await fs.mkdir(dataDir, { recursive: true });
   const fileContent = matter.stringify(description || '', {
-    title, category, prepTime, cookTime, yieldVal, ingredients, steps,
+    title, category, prepTime, cookTime, yieldVal, imageUrl, ingredients, steps,
   });
   const filename = safeSlug ? `${safeSlug}.md` : `${safeTitle}.md`;
   await fs.writeFile(path.join(dataDir, filename), fileContent);

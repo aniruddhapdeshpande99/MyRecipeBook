@@ -14,6 +14,7 @@ export default function RecipeEditor({ existingSlug }) {
   const [yieldVal, setYieldVal] = useState('');
   const [ingredients, setIngredients] = useState([{ id: uuid(), item: '', proportion: '' }]);
   const [steps, setSteps] = useState([{ id: uuid(), val: '' }]);
+  const [imageUrl, setImageUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(!!existingSlug);
   const [saveMessage, setSaveMessage] = useState('');
@@ -29,6 +30,7 @@ export default function RecipeEditor({ existingSlug }) {
         setTitle(data.title || '');
         setCategory(data.category || '');
         setDescription(data.description || '');
+        setImageUrl(data.imageUrl || '');
         setPrepTime(data.prepTime === 'N/A' ? '' : (data.prepTime || ''));
         setCookTime(data.cookTime === 'N/A' ? '' : (data.cookTime || ''));
         setYieldVal(data.yieldVal === 'N/A' ? '' : (data.yieldVal || ''));
@@ -73,6 +75,7 @@ export default function RecipeEditor({ existingSlug }) {
           title,
           category,
           description,
+          imageUrl,
           prepTime,
           cookTime,
           yieldVal,
@@ -122,13 +125,23 @@ export default function RecipeEditor({ existingSlug }) {
         />
       </div>
 
-      <div className="form-group">
+      <div class="form-group">
         <label>Category</label>
         <input
           type="text"
           value={category}
           onChange={e => setCategory(e.target.value)}
           placeholder="e.g. Mains, Sandwiches, Desserts"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Image URL</label>
+        <input
+          type="text"
+          value={imageUrl}
+          onChange={e => setImageUrl(e.target.value)}
+          placeholder="e.g. /images/aloo-matar.jpg or a web link"
         />
       </div>
 

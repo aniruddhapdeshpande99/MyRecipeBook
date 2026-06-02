@@ -132,6 +132,7 @@ export function parseRecipe(filePath, rawContent) {
     prepTime: prepTime || 'N/A',
     cookTime: cookTime || 'N/A',
     yieldVal: yieldVal || 'N/A',
+    imageUrl: data.imageUrl || '',
     description,
     content // Raw markdown body without frontmatter
   };

@@ -32,7 +32,7 @@ const htmlContent = marked.parse(recipe.content || rawContent);
 const imageBasename = safeSlug;
 const publicImagePath = path.join(process.cwd(), 'public', 'images', `${imageBasename}.jpg`);
 const hasImage = fs.existsSync(publicImagePath);
-const imagePath = hasImage ? `/images/${imageBasename}.jpg` : null;
+const imagePath = recipe.imageUrl || (hasImage ? `/images/${imageBasename}.jpg` : null);
 
 const hasPrep = recipe.prepTime && recipe.prepTime !== 'N/A';
 const hasCook = recipe.cookTime && recipe.cookTime !== 'N/A';
@@ -114,6 +114,18 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
         <img src={imagePath} alt={recipe.title} class="recipe-hero-image" />
       )}
 
+      <!-- Structured Two-Column Layout (built by JS) -->
+      <div class="recipe-columns" id="structured-layout" style="display:none;">
+        <div id="ingredients-col">
+          <h2 style="font-family:var(--font-serif); font-size:1.3rem; margin-bottom:1rem; color:var(--color-ink);">Ingredients</h2>
+          <div class="section-divider"><span>✦</span></div>
+        </div>
+        <div id="instructions-col">
+          <h2 style="font-family:var(--font-serif); font-size:1.3rem; margin-bottom:1rem; color:var(--color-ink);">Instructions</h2>
+          <div class="section-divider"><span>✦</span></div>
+        </div>
+      </div>
+
       <!-- Cooking Progress Bar -->
       <div class="cooking-progress" id="cooking-progress">
         <div class="cooking-progress__bar">
@@ -137,18 +149,6 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
             <polyline points="9 18 15 12 9 6"/>
           </svg>
         </button>
-      </div>
-
-      <!-- Structured Two-Column Layout (built by JS) -->
-      <div class="recipe-columns" id="structured-layout" style="display:none;">
-        <div id="ingredients-col">
-          <h2 style="font-family:var(--font-serif); font-size:1.3rem; margin-bottom:1rem; color:var(--color-ink);">Ingredients</h2>
-          <div class="section-divider"><span>✦</span></div>
-        </div>
-        <div id="instructions-col">
-          <h2 style="font-family:var(--font-serif); font-size:1.3rem; margin-bottom:1rem; color:var(--color-ink);">Instructions</h2>
-          <div class="section-divider"><span>✦</span></div>
-        </div>
       </div>
 
       <!-- Notes accordion (built by JS) -->
@@ -184,6 +184,17 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
 
         if (currentTarget === null) {
           if (tag === 'HR' || text.includes('prep time') || text.includes('cook time') || text.includes('yield')) return;
+        }
+
+        if (tag === 'H3') {
+          if (currentTarget === ingredientsCol) {
+            const subheading = document.createElement('h3');
+            subheading.className = 'recipe-subheading';
+            subheading.style.cssText = 'font-family:var(--font-serif); font-size:1.15rem; margin:1.75rem 0 0.75rem 0; color:var(--color-terracotta); font-weight:600; border-bottom:1px dashed rgba(140,59,26,0.2); padding-bottom:0.25rem;';
+            subheading.textContent = child.textContent || '';
+            ingredientsCol.appendChild(subheading);
+            return;
+          }
         }
 
         if (tag === 'H2') {
@@ -305,15 +316,10 @@ const hasAnyMeta = hasPrep || hasCook || hasYield;
         if (progressLabel) progressLabel.textContent = `${done} / ${totalSteps} steps`;
       }
 
-      allSteps.forEach((step) => {
+      allSteps.forEach((step, idx) => {
         step.addEventListener('click', () => {
           if (!document.body.classList.contains('cooking-mode-active')) return;
-          step.classList.toggle('completed');
-          // remove active, set active to next uncompleted
-          allSteps.forEach(s => s.classList.remove('active'));
-          const nextUncompleted = Array.from(allSteps).find(s => !s.classList.contains('completed'));
-          if (nextUncompleted) nextUncompleted.classList.add('active');
-          updateProgress();
+          goToStep(idx);
         });
       });
 
