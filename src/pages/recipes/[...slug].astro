@@ -1,8 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { parseRecipe } from '../../utils/recipeParser';
-import { promises as fs } from 'node:fs';
-import { existsSync } from 'node:fs';
+import fsPromises from 'node:fs/promises';
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { marked } from 'marked';
@@ -20,7 +20,7 @@ const filePath = path.join(dataDir, targetFile);
 
 let rawContent = '';
 try {
-  rawContent = await fs.readFile(filePath, 'utf-8');
+  rawContent = await fsPromises.readFile(filePath, 'utf-8');
 } catch {
   return Astro.redirect('/404');
 }
