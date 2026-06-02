@@ -1,10 +1,45 @@
 services:
+
+  # ── Production (default) ──────────────────────────────────────────────────
+  # docker compose up         → starts this
+  # docker compose build      → rebuilds this
   recipe-book:
     container_name: svens-cookbook-app
-    build: .
+    build:
+      context: .
+      target: prod        # only builds the prod stage
     ports:
       - "4321:4321"
     volumes:
       - ./data:/app/data
       - ./backups:/app/backups
     restart: unless-stopped
+
+  # ── Development (hot-reload) ───────────────────────────────────────────────
+  # docker compose run --rm dev               → one-off command in dev container
+  # docker compose up dev                     → start dev server with hot reload
+  # docker compose run --rm dev npm test:run  → run tests in Linux container
+  dev:
+    container_name: svens-cookbook-dev
+    build:
+      context: .
+      target: dev         # only builds base + dev stages (no production build)
+    ports:
+      - "4321:4321"
+    volumes:
+      # Source code hot-reloaded from host (Windows or WSL — doesn't matter)
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./data:/app/data
+      - ./astro.config.mjs:/app/astro.config.mjs
+      # node_modules lives INSIDE the container — never touched by host npm
+      # This is the key: the named volume shadows the host bind-mount
+      - dev_node_modules:/app/node_modules
+    environment:
+      - HOST=0.0.0.0
+      - PORT=4321
+    profiles:
+      - dev   # Won't start with plain "docker compose up" — must use "docker compose up dev"
+
+volumes:
+  dev_node_modules:   # Named volume for Linux node_modules — isolated from host

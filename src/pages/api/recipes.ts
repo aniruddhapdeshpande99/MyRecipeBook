@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
+import { sanitiseSlug } from '../../utils/slugUtils';
 
 export async function GET({ request }: { request: Request }) {
   const dataDir = path.join(process.cwd(), 'data', 'recipes');
@@ -10,7 +11,13 @@ export async function GET({ request }: { request: Request }) {
   const slug = url.searchParams.get('slug');
 
   if (slug) {
-    const safeSlug = slug.replace(/[^a-zA-Z0-9_-]/g, '');
+    const safeSlug = sanitiseSlug(slug);
+    if (!safeSlug) {
+      return new Response(JSON.stringify({ error: 'Invalid slug' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     const filePath = path.join(dataDir, `${safeSlug}.md`);
     try {
       const raw = await fs.readFile(filePath, 'utf-8');
@@ -52,9 +59,9 @@ export async function GET({ request }: { request: Request }) {
 export async function POST({ request }: { request: Request }) {
   const data = await request.json();
   const { slug, title, category, ingredients, steps, description, prepTime, cookTime, yieldVal } = data;
-  const safeSlug = slug ? slug.replace(/[^a-zA-Z0-9_-]/g, '') : '';
+  const safeSlug = slug ? sanitiseSlug(slug) : '';
   const safeTitle = title
-    ? title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
+    ? title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
     : 'untitled';
   const dataDir = path.join(process.cwd(), 'data', 'recipes');
   await fs.mkdir(dataDir, { recursive: true });

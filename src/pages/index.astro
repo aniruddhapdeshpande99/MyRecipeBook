@@ -95,12 +95,16 @@ sortedCategories.forEach((category) => {
           <h2 class="category-title">{category}</h2>
           <div class="recipe-grid">
             {groupedRecipes[category].map((recipe) => (
-              <a
-                href={`/recipes/${recipe.slug}`}
+              <div
+                role="link"
+                tabindex="0"
                 class="recipe-card"
                 data-title={recipe.title.toLowerCase()}
                 data-desc={(recipe.description || '').toLowerCase()}
                 data-category={category}
+                onclick={`window.location.href='/recipes/${recipe.slug}'`}
+                onkeydown={`if(event.key==='Enter'||event.key===' ')window.location.href='/recipes/${recipe.slug}'`}
+                style="cursor:pointer;"
               >
                 <img
                   src={`/images/${recipe.slug}.jpg`}
@@ -141,7 +145,7 @@ sortedCategories.forEach((category) => {
                     Download
                   </a>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
         </section>

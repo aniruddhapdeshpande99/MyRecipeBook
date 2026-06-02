@@ -19,6 +19,12 @@ export async function POST({ request }: { request: Request }) {
       headers: { 'Content-Type': 'application/json' },
     });
   }
+  if (message.length > 2000) {
+    return new Response(JSON.stringify({ error: 'Message too long (max 2000 chars)' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   const dataDir = path.join(process.cwd(), 'data');
   await fs.mkdir(dataDir, { recursive: true });
