@@ -144,22 +144,7 @@ try {
         <span class="cooking-progress__label" id="progress-label">0 / 0 steps</span>
       </div>
 
-      <!-- Step navigation — CSS shows/hides based on .cooking-mode-active on body -->
-      <div class="step-nav" id="step-nav">
-        <button class="step-nav__btn" id="step-prev" type="button" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          Prev
-        </button>
-        <span class="step-nav__indicator" id="step-indicator">Step 1</span>
-        <button class="step-nav__btn" id="step-next" type="button">
-          Next
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </button>
-      </div>
+      <!-- Step navigation removed. Now handled inline per step -->
 
       <!-- Notes accordion (built by JS) -->
       <div id="notes-col" class="notes-section" style="display:none;"></div>
@@ -535,23 +520,45 @@ try {
       }
 
       // === PREV / NEXT STEP NAVIGATION ===
-      const prevBtn = document.getElementById('step-prev') as HTMLButtonElement;
-      const nextBtn = document.getElementById('step-next') as HTMLButtonElement;
-      const stepIndicator = document.getElementById('step-indicator');
       let currentStepIndex = 0;
 
-      function syncNavButtons() {
-        if (prevBtn) prevBtn.disabled = currentStepIndex === 0;
-        if (nextBtn) {
-          if (currentStepIndex >= allSteps.length - 1) {
-            nextBtn.innerHTML = `Finish <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
-            nextBtn.disabled = false;
-          } else {
-            nextBtn.innerHTML = `Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`;
-            nextBtn.disabled = false;
-          }
+      function renderInlineNavButtons(stepEl: Element, index: number) {
+        // Remove existing nav if any
+        const existingNav = stepEl.querySelector('.inline-step-nav');
+        if (existingNav) existingNav.remove();
+
+        const navContainer = document.createElement('div');
+        navContainer.className = 'inline-step-nav';
+        navContainer.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 1rem; width: 100%; justify-content: flex-end;';
+
+        if (index > 0) {
+          const prevBtn = document.createElement('button');
+          prevBtn.className = 'action-btn';
+          prevBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Prev`;
+          prevBtn.onclick = (e) => { e.stopPropagation(); goToStep(index - 1); };
+          navContainer.appendChild(prevBtn);
         }
-        if (stepIndicator) stepIndicator.textContent = `Step ${currentStepIndex + 1} of ${allSteps.length}`;
+
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'action-btn active';
+        if (index >= allSteps.length - 1) {
+          nextBtn.innerHTML = `Finish <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+          nextBtn.onclick = (e) => { 
+            e.stopPropagation(); 
+            allSteps[index].classList.add('completed');
+            allSteps[index].classList.remove('active');
+            updateProgress();
+            openDiaryModal();
+          };
+        } else {
+          nextBtn.innerHTML = `Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+          nextBtn.onclick = (e) => { e.stopPropagation(); goToStep(index + 1); };
+        }
+        navContainer.appendChild(nextBtn);
+        
+        // Append nav container inside the textSpan which is flex:1
+        const textSpan = stepEl.querySelector('span:nth-child(2)');
+        if (textSpan) textSpan.appendChild(navContainer);
       }
 
       function goToStep(index: number) {
@@ -559,12 +566,22 @@ try {
         currentStepIndex = index;
         allSteps.forEach((s, i) => {
           s.classList.remove('active', 'completed');
+          const existingNav = s.querySelector('.inline-step-nav');
+          if (existingNav) existingNav.remove();
+          
           if (i < index) s.classList.add('completed');
         });
-        allSteps[currentStepIndex].classList.add('active');
-        allSteps[currentStepIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        const activeStep = allSteps[currentStepIndex];
+        activeStep.classList.add('active');
+        renderInlineNavButtons(activeStep, currentStepIndex);
+        
+        // Scroll slightly above the active step so the user can see context
+        const yOffset = -100;
+        const y = activeStep.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+        
         updateProgress();
-        syncNavButtons();
       }
 
       if (toggleBtn) {
@@ -578,49 +595,39 @@ try {
             toggleBtn.classList.remove('active');
             toggleBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><polyline points="12 6 12 12 16 14"/></svg> Start Cooking`;
             
-            // If they stop cooking and ALL steps are done, trigger modal!
             if (doneSteps === totalSteps && totalSteps > 0) {
               openDiaryModal();
             }
             
-            // Reset all step state
-            allSteps.forEach(s => s.classList.remove('active', 'completed'));
+            allSteps.forEach(s => {
+              s.classList.remove('active', 'completed');
+              const existingNav = s.querySelector('.inline-step-nav');
+              if (existingNav) existingNav.remove();
+            });
             currentStepIndex = 0;
             updateProgress();
-            syncNavButtons();
           } else {
             // Starting cooking mode
             document.body.classList.add('cooking-mode-active');
             toggleBtn.classList.add('active');
             toggleBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Stop Cooking`;
             
-            allSteps.forEach(s => s.classList.remove('active', 'completed'));
+            allSteps.forEach(s => {
+              s.classList.remove('active', 'completed');
+              const existingNav = s.querySelector('.inline-step-nav');
+              if (existingNav) existingNav.remove();
+            });
             currentStepIndex = 0;
-            if (allSteps.length > 0) allSteps[0].classList.add('active');
+            if (allSteps.length > 0) {
+              allSteps[0].classList.add('active');
+              renderInlineNavButtons(allSteps[0], 0);
+              
+              // Autoscroll to recipe directly
+              const yOffset = -80;
+              const y = instructionsCol.getBoundingClientRect().top + window.pageYOffset + yOffset;
+              window.scrollTo({ top: y, behavior: 'smooth' });
+            }
             updateProgress();
-            syncNavButtons();
-          }
-        });
-      }
-
-      if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-          if (document.body.classList.contains('cooking-mode-active')) goToStep(currentStepIndex - 1);
-        });
-      }
-      if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-          if (!document.body.classList.contains('cooking-mode-active')) return;
-          if (currentStepIndex >= allSteps.length - 1) {
-            // Mark final step completed
-            allSteps[currentStepIndex].classList.add('completed');
-            allSteps[currentStepIndex].classList.remove('active');
-            updateProgress();
-            
-            // Open the diary pop-up modal
-            openDiaryModal();
-          } else {
-            goToStep(currentStepIndex + 1);
           }
         });
       }

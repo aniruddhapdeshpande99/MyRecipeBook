@@ -24,13 +24,13 @@
   --color-muted:         #5C6B5F;
   --color-border:        #DFD9CE; /* Spaced warm borders */
 
-  /* Dark mode palette — rustic warm forest & mud clay theme */
-  --color-dark-bg:       #191C17; /* Very deep warm earthy charcoal (forest shadow) */
-  --color-dark-surface:  #20241E; /* Dark rustic olive-tinted surface */
-  --color-dark-card:     #282D26; /* Warm clay-charcoal card background */
-  --color-dark-border:   #3B4238; /* Muted forest-mud border */
-  --color-dark-text:     #E8E5DD; /* Warm paper-white text for low eye strain */
-  --color-dark-muted:    #A39E93; /* Soft clay-beige for secondary metadata text */
+  /* Dark mode palette — rustic warm umber & espresso theme */
+  --color-dark-bg:       #2A1C14; /* Deep warm espresso brown */
+  --color-dark-surface:  #36251B; /* Rustic dark umber surface */
+  --color-dark-card:     #422E22; /* Warm clay-brown card background */
+  --color-dark-border:   #5C4334; /* Muted terracotta-brown border */
+  --color-dark-text:     #F3EFE9; /* Warm cream text */
+  --color-dark-muted:    #C2B2A3; /* Soft clay-beige for secondary text */
 
   --font-serif: 'Lora', Georgia, serif;
   --font-sans:  'Inter', system-ui, sans-serif;
@@ -149,17 +149,36 @@ a:hover { color: var(--color-sage-dark); }
 .nav-link:hover { color: var(--color-cream); }
 
 .nav-link--cta {
-  padding: 0.45rem 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.25rem;
   background-color: var(--color-cream);
   color: var(--color-sage) !important;
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-pill);
-  font-weight: 700;
-  font-size: 0.85rem;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px rgba(62,86,67,0.12);
+  transition: all 0.25s ease;
+}
+.nav-link--cta::before {
+  content: '+';
+  font-size: 1.2rem;
+  font-weight: 400;
+  line-height: 0.8;
+  color: var(--color-terracotta);
 }
 .nav-link--cta:hover {
-  background-color: var(--color-cream-dark);
-  transform: translateY(-1px);
+  background-color: var(--color-sage);
+  color: var(--color-cream) !important;
+  border-color: var(--color-sage);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(62,86,67,0.2);
+}
+.nav-link--cta:hover::before {
+  color: var(--color-cream-dark);
 }
 
 @media (max-width: 480px) {
