@@ -1,24 +1,19 @@
-# Stage 1: Build the static site
-FROM node:24-alpine AS builder
+FROM node:24-alpine as builder
 WORKDIR /app
-
-# Install dependencies first (caching optimization)
 COPY package*.json ./
-RUN npm ci
-
-# Copy the rest of the application code
+RUN npm install
 COPY . .
-
-# Run static site compilation
 RUN npm run build
 
-# Stage 2: Serve with a production-grade lightweight server
-FROM nginx:alpine
+FROM node:24-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+RUN mkdir -p /app/data /app/backups
 
-# Copy Astro build output to nginx document root
-COPY --from=builder /app/dist /usr/share/nginx/html
+ENV HOST=0.0.0.0
+ENV PORT=4321
 
-# Expose Nginx default HTTP port
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 4321
+CMD ["node", "./dist/server/entry.mjs"]

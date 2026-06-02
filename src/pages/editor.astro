@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import RecipeEditor from '../components/RecipeEditor.jsx';
+
+const slug = Astro.url.searchParams.get('slug') || '';
+---
+<Layout title={slug ? 'Edit Recipe' : 'New Recipe'}>
+  <main class="editor-container">
+    <RecipeEditor client:load existingSlug={slug} />
+  </main>
+</Layout>
+<style>
+  .editor-container { max-width: 1000px; margin: 4rem auto; padding: 0 1rem; }
+</style>

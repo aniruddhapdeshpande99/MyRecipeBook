@@ -1,0 +1,10 @@
+services:
+  recipe-book:
+    container_name: svens-cookbook-app
+    build: .
+    ports:
+      - "4321:4321"
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+    restart: unless-stopped
