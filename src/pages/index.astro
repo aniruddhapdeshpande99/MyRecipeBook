@@ -1,0 +1,139 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { parseRecipe } from '../utils/recipeParser';
+
+// Load all recipes as raw markdown content at build time using Vite glob
+const rawRecipes = import.meta.glob('../../Recipes/**/*.md', { 
+  eager: true, 
+  query: '?raw', 
+  import: 'default' 
+}) as Record<string, string>;
+
+// Parse all recipes
+const recipes = Object.entries(rawRecipes).map(([path, content]) => {
+  return parseRecipe(path, content);
+});
+
+// Group recipes by category
+const groupedRecipes: Record<string, typeof recipes> = {};
+recipes.forEach((recipe) => {
+  if (!groupedRecipes[recipe.category]) {
+    groupedRecipes[recipe.category] = [];
+  }
+  groupedRecipes[recipe.category].push(recipe);
+});
+
+// Sort categories alphabetically
+const sortedCategories = Object.keys(groupedRecipes).sort();
+
+// Sort recipes within each category alphabetically
+sortedCategories.forEach((category) => {
+  groupedRecipes[category].sort((a, b) => a.title.localeCompare(b.title));
+});
+---
+
+<Layout title="Home" description="Explore a curated collection of classic and modern recipes in a beautiful, print-friendly cookbook layout.">
+  <div class="hero">
+    <h1>The Modern Pantry</h1>
+    <p>A collection of family recipes, crafted for cooking.</p>
+  </div>
+
+  <div class="search-container">
+    <input 
+      type="text" 
+      id="search-bar" 
+      class="search-input" 
+      placeholder="Search recipes, ingredients, or categories..." 
+      aria-label="Search recipes"
+    />
+  </div>
+
+  <div id="recipe-list">
+    {sortedCategories.map((category) => (
+      <section class="category-section" data-category={category}>
+        <h2 class="category-title">{category}</h2>
+        <div class="recipe-grid">
+          {groupedRecipes[category].map((recipe) => (
+            <div 
+              class="recipe-card" 
+              data-title={recipe.title.toLowerCase()}
+              data-desc={recipe.description.toLowerCase()}
+              data-slug={recipe.slug}
+              onclick={`window.location.href='/recipes/${recipe.slug}'`}
+            >
+              <div>
+                <h3>
+                  <a href={`/recipes/${recipe.slug}`}>{recipe.title}</a>
+                </h3>
+                <p class="desc">{recipe.description}</p>
+              </div>
+              <div class="recipe-meta-inline">
+                {recipe.prepTime !== 'N/A' && (
+                  <span>Prep: {recipe.prepTime}</span>
+                )}
+                {recipe.cookTime !== 'N/A' && (
+                  <span>Cook: {recipe.cookTime}</span>
+                )}
+                {recipe.yieldVal !== 'N/A' && (
+                  <span>Yield: {recipe.yieldVal}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+
+  <div id="no-results" style="display: none; text-align: center; margin: 3rem 0; font-family: var(--font-serif); font-size: 1.25rem; color: var(--text-muted); font-style: italic;">
+    No recipes match your search terms.
+  </div>
+
+  <!-- Client-side fuzzy search script -->
+  <script>
+    const searchBar = document.getElementById('search-bar') as HTMLInputElement;
+    const categorySections = document.querySelectorAll('.category-section');
+    const recipeCards = document.querySelectorAll('.recipe-card');
+    const noResults = document.getElementById('no-results') as HTMLDivElement;
+
+    if (searchBar) {
+      searchBar.addEventListener('input', (e) => {
+        const query = (e.target as HTMLInputElement).value.toLowerCase().trim();
+        let totalVisible = 0;
+
+        categorySections.forEach((section) => {
+          const cards = section.querySelectorAll('.recipe-card');
+          let sectionVisibleCount = 0;
+
+          cards.forEach((card) => {
+            const title = card.getAttribute('data-title') || '';
+            const desc = card.getAttribute('data-desc') || '';
+            
+            // Check if query matches title or description
+            if (title.includes(query) || desc.includes(query)) {
+              (card as HTMLElement).style.display = 'flex';
+              sectionVisibleCount++;
+              totalVisible++;
+            } else {
+              (card as HTMLElement).style.display = 'none';
+            }
+          });
+
+          // If no cards are visible in this section, hide the whole section
+          if (sectionVisibleCount === 0) {
+            (section as HTMLElement).style.display = 'none';
+          } else {
+            (section as HTMLElement).style.display = 'block';
+          }
+        });
+
+        // Toggle "no results" visibility
+        if (totalVisible === 0) {
+          noResults.style.display = 'block';
+        } else {
+          noResults.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</Layout>

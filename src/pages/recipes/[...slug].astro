@@ -1,0 +1,239 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { parseRecipe } from '../../utils/recipeParser';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export async function getStaticPaths() {
+  // Load raw text contents to extract metadata
+  const rawRecipes = import.meta.glob('../../../Recipes/**/*.md', { 
+    eager: true, 
+    query: '?raw', 
+    import: 'default' 
+  }) as Record<string, string>;
+  
+  // Load compiled modules to obtain the Content component
+  const compiledRecipes = import.meta.glob('../../../Recipes/**/*.md', { 
+    eager: true 
+  }) as Record<string, any>;
+
+  return Object.entries(rawRecipes).map(([filePath, rawContent]) => {
+    const parsed = parseRecipe(filePath, rawContent);
+    const compiledModule = compiledRecipes[filePath];
+    
+    // Extract file basename for image association (e.g. "aloo-matar" from "aloo-matar.md")
+    // Slashes are normalized to /
+    const cleanPath = filePath.replace(/\\/g, '/');
+    const fileBasename = cleanPath.split('/').pop()?.replace(/\.md$/, '') || '';
+    const imageBasename = fileBasename.toLowerCase();
+    
+    // Check if corresponding JPG exists under public/images/
+    const publicImagePath = path.join(process.cwd(), 'public', 'images', `${imageBasename}.jpg`);
+    const hasImage = fs.existsSync(publicImagePath);
+    const imagePath = hasImage ? `/images/${imageBasename}.jpg` : null;
+
+    return {
+      params: { slug: parsed.slug },
+      props: { 
+        recipe: parsed, 
+        Content: compiledModule.Content,
+        imagePath
+      }
+    };
+  });
+}
+
+interface Props {
+  recipe: ReturnType<typeof parseRecipe>;
+  Content: any;
+  imagePath: string | null;
+}
+
+const { recipe, Content, imagePath } = Astro.props;
+---
+
+<Layout title={recipe.title} description={recipe.description}>
+  <div class="recipe-detail">
+    <!-- Breadcrumb back link -->
+    <a href="/" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to all recipes
+    </a>
+
+    <!-- Recipe Header -->
+    <div class="recipe-detail-header">
+      <h1>{recipe.title}</h1>
+      <p class="recipe-description">{recipe.description}</p>
+      
+      <!-- Recipe Control Buttons -->
+      <div class="recipe-actions">
+        <button id="toggle-cooking" class="action-btn" title="Toggle interactive step-by-step cooking mode">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          Cooking Mode
+        </button>
+        <button onclick="window.print()" class="action-btn" title="Print recipe or save as PDF">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Print Recipe
+        </button>
+      </div>
+
+      <!-- Quick Metadata Details -->
+      <div class="metadata-box">
+        <div class="meta-item">
+          <span class="meta-label">Prep Time</span>
+          <span class="meta-value">{recipe.prepTime}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Cook Time</span>
+          <span class="meta-value">{recipe.cookTime}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Yield</span>
+          <span class="meta-value">{recipe.yieldVal}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recipe Hero Image -->
+    {imagePath && (
+      <img src={imagePath} alt={recipe.title} class="recipe-hero-image" />
+    )}
+
+    <!-- Dynamic Two-Column Layout -->
+    <div class="recipe-columns" id="structured-layout" style="display: none;">
+      <div class="ingredients-column" id="ingredients-col">
+        <h2>Ingredients</h2>
+      </div>
+      <div class="instructions-column" id="instructions-col">
+        <h2>Instructions</h2>
+      </div>
+    </div>
+
+    <!-- Fallback Content Container (Visible if JS is disabled) -->
+    <div id="raw-render">
+      <Content />
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const rawRender = document.getElementById('raw-render');
+      const structuredLayout = document.getElementById('structured-layout');
+      const ingredientsCol = document.getElementById('ingredients-col');
+      const instructionsCol = document.getElementById('instructions-col');
+      
+      if (!rawRender || !structuredLayout || !ingredientsCol || !instructionsCol) return;
+      
+      const children = Array.from(rawRender.children);
+      let currentTargetCol: HTMLElement | null = null;
+      
+      let skipFirstH1 = true;
+      let skipDescription = true;
+      
+      children.forEach((child) => {
+        const tagName = child.tagName;
+        const textContent = child.textContent || '';
+        
+        // Skip main title H1
+        if (tagName === 'H1' && skipFirstH1) {
+          skipFirstH1 = false;
+          return;
+        }
+        
+        // Skip first paragraph (description)
+        if (tagName === 'P' && skipDescription && !skipFirstH1) {
+          skipDescription = false;
+          return;
+        }
+        
+        // Skip metadata bold tags and top dividers
+        if (currentTargetCol === null) {
+          if (
+            tagName === 'HR' || 
+            textContent.includes('Prep time:') || 
+            textContent.includes('Cook time:') || 
+            textContent.includes('Yield:')
+          ) {
+            return;
+          }
+        }
+        
+        // Check for sections headers
+        if (tagName === 'H2') {
+          const text = textContent.toLowerCase().trim();
+          if (text.includes('ingredients')) {
+            currentTargetCol = ingredientsCol;
+            return; // Skip adding the duplicate H2
+          } else if (text.includes('steps') || text.includes('instructions')) {
+            currentTargetCol = instructionsCol;
+            return; // Skip adding the duplicate H2
+          } else {
+            currentTargetCol = instructionsCol; // Append notes/origins to instructions
+          }
+        }
+        
+        if (currentTargetCol) {
+          if (tagName === 'UL') {
+            child.classList.add('ingredients-list');
+          } else if (tagName === 'OL') {
+            child.classList.add('instructions-list');
+            
+            // Wire up interactive steps
+            const lis = child.querySelectorAll('li');
+            lis.forEach((li, idx) => {
+              li.classList.add('interactive-step');
+              
+              li.addEventListener('click', () => {
+                // Interactive clicking in cooking mode
+                if (document.body.classList.contains('cooking-mode-active')) {
+                  if (li.classList.contains('active')) {
+                    li.classList.remove('active');
+                    li.classList.add('completed');
+                  } else if (li.classList.contains('completed')) {
+                    li.classList.remove('completed');
+                  } else {
+                    const currentActive = instructionsCol.querySelector('li.active');
+                    if (currentActive) currentActive.classList.remove('active');
+                    li.classList.add('active');
+                  }
+                }
+              });
+            });
+          }
+          
+          currentTargetCol.appendChild(child);
+        }
+      });
+      
+      // Swap fallback rendering for structured two-column layout
+      rawRender.style.display = 'none';
+      structuredLayout.style.display = 'grid';
+      
+      // Cooking Mode Toggle Setup
+      const toggleCookingBtn = document.getElementById('toggle-cooking');
+      if (toggleCookingBtn) {
+        toggleCookingBtn.addEventListener('click', () => {
+          document.body.classList.toggle('cooking-mode-active');
+          toggleCookingBtn.classList.toggle('active');
+          
+          const steps = instructionsCol.querySelectorAll('.instructions-list li');
+          steps.forEach((step, idx) => {
+            step.classList.remove('active', 'completed');
+            if (document.body.classList.contains('cooking-mode-active') && idx === 0) {
+              step.classList.add('active');
+            }
+          });
+        });
+      }
+    });
+  </script>
+</Layout>
