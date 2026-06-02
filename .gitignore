@@ -22,3 +22,11 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# local worktrees
+.worktrees/
+worktrees/
+
+# local docker data and backups
+data/
+backups/
