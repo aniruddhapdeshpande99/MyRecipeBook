@@ -1,6 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { parseRecipe } from '../utils/recipeParser';
+import AboutSection from '../components/AboutSection.astro';
+import ContactSection from '../components/ContactSection.astro';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
@@ -50,22 +52,40 @@ sortedCategories.forEach((category) => {
       class="hero-banner__img"
     />
     <div class="hero-banner__overlay"></div>
-    <div class="hero-banner__content">
-      <h1 class="hero-banner__title">Sven's Cookbook</h1>
-      <p class="hero-banner__subtitle">A personal collection of recipes, crafted with care.</p>
-    </div>
+      <div class="hero-banner__content">
+        <h1 class="hero-banner__title">Sven's Cookbook</h1>
+        <p class="hero-banner__subtitle">A personal collection of recipes, crafted with care.</p>
+        <div class="hero-search">
+          <svg class="hero-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            id="search-bar"
+            class="hero-search__input"
+            placeholder="Search recipes or ingredients..."
+            aria-label="Search recipes"
+          />
+        </div>
+        <a href="#recipe-list" class="hero-banner__cta">
+          Browse Recipes
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </a>
+      </div>
   </div>
 
   <main>
-    <!-- Search -->
-    <div class="search-container">
-      <input
-        type="text"
-        id="search-bar"
-        class="search-input"
-        placeholder="Search recipes or ingredients..."
-        aria-label="Search recipes"
-      />
+    <!-- Filters Bar -->
+    <div class="filters-bar" id="filters-bar">
+      <select class="filter-select" id="category-filter" aria-label="Filter by category">
+        <option value="ALL">All Categories</option>
+        {sortedCategories.map((cat) => (
+          <option value={cat}>{cat}</option>
+        ))}
+      </select>
+      <button class="filter-clear" id="filter-clear" type="button">Clear filters</button>
     </div>
 
     <!-- Recipe List -->
@@ -80,7 +100,16 @@ sortedCategories.forEach((category) => {
                 class="recipe-card"
                 data-title={recipe.title.toLowerCase()}
                 data-desc={(recipe.description || '').toLowerCase()}
+                data-category={category}
               >
+                <img
+                  src={`/images/${recipe.slug}.jpg`}
+                  alt={recipe.title}
+                  class="recipe-card__thumb"
+                  loading="lazy"
+                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                />
+                <div class="recipe-card__thumb-placeholder" style="display:none;" aria-hidden="true">🍽</div>
                 <span class="recipe-card__badge">{category}</span>
                 <div class="recipe-card__body">
                   <h3>{recipe.title}</h3>
@@ -96,6 +125,21 @@ sortedCategories.forEach((category) => {
                       <span>🍽 {recipe.yieldVal}</span>
                     )}
                   </div>
+                  <a
+                    href={`/api/download?slug=${recipe.slug}`}
+                    class="recipe-card__download"
+                    download
+                    onclick="event.stopPropagation();"
+                    title={`Download ${recipe.title} as markdown`}
+                    aria-label={`Download ${recipe.title}`}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download
+                  </a>
                 </div>
               </a>
             ))}
@@ -107,33 +151,52 @@ sortedCategories.forEach((category) => {
     <div id="no-results" style="display:none; text-align:center; margin:3rem 0; font-family:var(--font-serif); font-size:1.2rem; color:var(--color-muted); font-style:italic;">
       No recipes match your search.
     </div>
+    <AboutSection />
+    <ContactSection />
   </main>
 
   <script>
     const searchBar = document.getElementById('search-bar') as HTMLInputElement;
+    const categoryFilter = document.getElementById('category-filter') as HTMLSelectElement;
+    const filterClear = document.getElementById('filter-clear') as HTMLButtonElement;
     const categorySections = document.querySelectorAll('.category-section');
     const noResults = document.getElementById('no-results') as HTMLDivElement;
 
-    if (searchBar) {
-      searchBar.addEventListener('input', (e) => {
-        const query = (e.target as HTMLInputElement).value.toLowerCase().trim();
-        let totalVisible = 0;
+    function applyFilters() {
+      const query = searchBar ? searchBar.value.toLowerCase().trim() : '';
+      const selectedCat = categoryFilter ? categoryFilter.value : 'ALL';
+      let totalVisible = 0;
 
-        categorySections.forEach((section) => {
-          const cards = section.querySelectorAll('.recipe-card');
-          let visible = 0;
-          cards.forEach((card) => {
-            const title = card.getAttribute('data-title') || '';
-            const desc = card.getAttribute('data-desc') || '';
-            const match = !query || title.includes(query) || desc.includes(query);
-            (card as HTMLElement).style.display = match ? 'flex' : 'none';
-            if (match) visible++;
-          });
-          (section as HTMLElement).style.display = visible === 0 ? 'none' : 'block';
-          totalVisible += visible;
+      categorySections.forEach((section) => {
+        const sectionCat = section.getAttribute('data-category') || '';
+        const catMatch = selectedCat === 'ALL' || sectionCat === selectedCat;
+        if (!catMatch) {
+          (section as HTMLElement).style.display = 'none';
+          return;
+        }
+        const cards = section.querySelectorAll('.recipe-card');
+        let visible = 0;
+        cards.forEach((card) => {
+          const title = card.getAttribute('data-title') || '';
+          const desc = card.getAttribute('data-desc') || '';
+          const match = !query || title.includes(query) || desc.includes(query);
+          (card as HTMLElement).style.display = match ? 'flex' : 'none';
+          if (match) visible++;
         });
+        (section as HTMLElement).style.display = visible === 0 ? 'none' : 'block';
+        totalVisible += visible;
+      });
 
-        noResults.style.display = totalVisible === 0 ? 'block' : 'none';
+      if (noResults) noResults.style.display = totalVisible === 0 ? 'block' : 'none';
+    }
+
+    if (searchBar) searchBar.addEventListener('input', applyFilters);
+    if (categoryFilter) categoryFilter.addEventListener('change', applyFilters);
+    if (filterClear) {
+      filterClear.addEventListener('click', () => {
+        if (searchBar) searchBar.value = '';
+        if (categoryFilter) categoryFilter.value = 'ALL';
+        applyFilters();
       });
     }
   </script>
