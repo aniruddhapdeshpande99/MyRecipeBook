@@ -6,7 +6,7 @@ interface Props {
   description?: string;
 }
 
-const { title, description = "A beautiful, minimalist collection of curated recipes." } = Astro.props;
+const { title, description = "A personal collection of recipes, crafted for cooking." } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -16,38 +16,37 @@ const { title, description = "A beautiful, minimalist collection of curated reci
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/apple-touch-icon.png" />
     <meta name="generator" content={Astro.generator} />
-    
-    <!-- SEO Meta Tags -->
-    <title>{title} | Sven's CookBook</title>
+
+    <!-- SEO -->
+    <title>{title} | Sven's Cookbook</title>
     <meta name="description" content={description} />
-    <meta property="og:title" content={`${title} | Sven's CookBook`} />
+    <meta property="og:title" content={`${title} | Sven's Cookbook`} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
 
-    <!-- PWA & Apple Web App Meta Tags -->
+    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Sven's CookBook" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sven's Cookbook" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#3E5643" />
   </head>
   <body>
     <header class="site-header">
       <a href="/" class="site-logo" aria-label="Sven's Cookbook Home">
-        <!-- Inline cooking icon: crossed knife + pot -->
         <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-          <!-- Dutch oven / pot -->
-          <ellipse cx="28" cy="34" rx="11" ry="7" fill="currentColor" opacity="0.9"/>
-          <rect x="17" y="28" width="22" height="6" rx="2" fill="currentColor" opacity="0.9"/>
-          <rect x="14" y="29" width="4" height="3" rx="1" fill="currentColor" opacity="0.7"/>
-          <rect x="30" y="29" width="4" height="3" rx="1" fill="currentColor" opacity="0.7"/>
-          <circle cx="28" cy="27" r="2" fill="currentColor" opacity="0.8"/>
-          <!-- Chef's knife -->
-          <line x1="10" y1="10" x2="32" y2="30" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M10 10 L18 6 L22 14 Z" fill="currentColor" opacity="0.9"/>
-          <!-- Second knife (paring knife) -->
-          <line x1="22" y1="8" x2="38" y2="26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
-          <path d="M22 8 L27 5 L30 11 Z" fill="currentColor" opacity="0.6"/>
+          <!-- Spoon -->
+          <line x1="34" y1="6" x2="34" y2="38" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <ellipse cx="34" cy="10" rx="4" ry="5.5" stroke="currentColor" stroke-width="2.2" fill="none"/>
+          <!-- Knife -->
+          <line x1="26" y1="6" x2="26" y2="38" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M26 6 Q20 14 22 22 L26 22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Herb sprig -->
+          <path d="M14 38 Q14 28 18 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          <ellipse cx="12" cy="26" rx="4" ry="2.5" transform="rotate(-30 12 26)" fill="currentColor" opacity="0.7"/>
+          <ellipse cx="20" cy="22" rx="4" ry="2.5" transform="rotate(20 20 22)" fill="currentColor" opacity="0.7"/>
+          <ellipse cx="14" cy="32" rx="3.5" ry="2" transform="rotate(-15 14 32)" fill="currentColor" opacity="0.6"/>
         </svg>
         <div class="logo-text">
           <span class="logo-name">Sven's</span>
@@ -59,8 +58,6 @@ const { title, description = "A beautiful, minimalist collection of curated reci
         <a href="/editor" class="nav-link nav-link--cta">+ Add Recipe</a>
       </nav>
     </header>
-    <main>
-      <slot />
-    </main>
+    <slot />
   </body>
 </html>

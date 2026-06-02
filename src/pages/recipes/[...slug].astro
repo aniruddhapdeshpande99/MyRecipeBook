@@ -4,19 +4,16 @@ import { parseRecipe } from '../../utils/recipeParser';
 import fsPromises from 'node:fs/promises';
 import fs from 'node:fs';
 import path from 'node:path';
-
 import { marked } from 'marked';
 
 const { slug } = Astro.params;
 
-// Prevent directory traversal
 if (!slug || slug.includes('..')) {
   return Astro.redirect('/404');
 }
 
 const dataDir = path.join(process.cwd(), 'data', 'recipes');
-const targetFile = `${slug}.md`;
-const filePath = path.join(dataDir, targetFile);
+const filePath = path.join(dataDir, `${slug}.md`);
 
 let rawContent = '';
 try {
@@ -24,85 +21,122 @@ try {
 } catch {
   return Astro.redirect('/404');
 }
-const recipe = parseRecipe(filePath, rawContent);
 
+const recipe = parseRecipe(filePath, rawContent);
 const htmlContent = marked.parse(recipe.content || rawContent);
 
 const imageBasename = slug.toLowerCase();
 const publicImagePath = path.join(process.cwd(), 'public', 'images', `${imageBasename}.jpg`);
 const hasImage = fs.existsSync(publicImagePath);
 const imagePath = hasImage ? `/images/${imageBasename}.jpg` : null;
+
+const hasPrep = recipe.prepTime && recipe.prepTime !== 'N/A';
+const hasCook = recipe.cookTime && recipe.cookTime !== 'N/A';
+const hasYield = recipe.yieldVal && recipe.yieldVal !== 'N/A';
+const hasAnyMeta = hasPrep || hasCook || hasYield;
 ---
 
 <Layout title={recipe.title} description={recipe.description}>
-  <div class="recipe-detail">
-    <!-- Breadcrumb back link -->
-    <a href="/" class="back-link">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
-      Back to all recipes
-    </a>
+  <main>
+    <div class="recipe-detail">
 
-    <!-- Recipe Header -->
-    <div class="recipe-detail-header">
-      <h1>{recipe.title}</h1>
-      <p class="recipe-description">{recipe.description}</p>
-      
-      <!-- Recipe Control Buttons -->
-      <div class="recipe-actions">
-        <button id="toggle-cooking" class="action-btn" title="Toggle interactive step-by-step cooking mode">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-          </svg>
-          Cooking Mode
-        </button>
-        <button onclick="window.print()" class="action-btn" title="Print recipe or save as PDF">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 6 2 18 2 18 9"></polyline>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-            <rect x="6" y="14" width="12" height="8"></rect>
-          </svg>
-          Print Recipe
-        </button>
+      <!-- Back link -->
+      <a href="/" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        All Recipes
+      </a>
+
+      <!-- Header -->
+      <div class="recipe-detail-header">
+        <h1>{recipe.title}</h1>
+        <p class="recipe-description">{recipe.description}</p>
+
+        <!-- Action Buttons -->
+        <div class="recipe-actions">
+          <button id="toggle-cooking" class="action-btn" title="Toggle cooking mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Start Cooking
+          </button>
+          <a href={`/editor?slug=${slug}`} class="action-btn" title="Edit this recipe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit Recipe
+          </a>
+          <button onclick="window.print()" class="action-btn" title="Print recipe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9"/>
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            Print
+          </button>
+        </div>
+
+        <!-- Metadata Box — only shown if any value exists -->
+        {hasAnyMeta && (
+          <div class="metadata-box">
+            {hasPrep && (
+              <div class="meta-item">
+                <span class="meta-label">Prep</span>
+                <span class="meta-value">{recipe.prepTime}</span>
+              </div>
+            )}
+            {hasCook && (
+              <div class="meta-item">
+                <span class="meta-label">Cook</span>
+                <span class="meta-value">{recipe.cookTime}</span>
+              </div>
+            )}
+            {hasYield && (
+              <div class="meta-item">
+                <span class="meta-label">Yield</span>
+                <span class="meta-value">{recipe.yieldVal}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <!-- Quick Metadata Details -->
-      <div class="metadata-box">
-        <div class="meta-item">
-          <span class="meta-label">Prep Time</span>
-          <span class="meta-value">{recipe.prepTime}</span>
+      <!-- Hero Image -->
+      {imagePath && (
+        <img src={imagePath} alt={recipe.title} class="recipe-hero-image" />
+      )}
+
+      <!-- Cooking Progress Bar -->
+      <div class="cooking-progress" id="cooking-progress">
+        <div class="cooking-progress__bar">
+          <div class="cooking-progress__fill" id="progress-fill"></div>
         </div>
-        <div class="meta-item">
-          <span class="meta-label">Cook Time</span>
-          <span class="meta-value">{recipe.cookTime}</span>
+        <span class="cooking-progress__label" id="progress-label">0 / 0 steps</span>
+      </div>
+
+      <!-- Structured Two-Column Layout (built by JS) -->
+      <div class="recipe-columns" id="structured-layout" style="display:none;">
+        <div id="ingredients-col">
+          <h2 style="font-family:var(--font-serif); font-size:1.3rem; margin-bottom:1rem; color:var(--color-ink);">Ingredients</h2>
+          <div class="section-divider"><span>✦</span></div>
         </div>
-        <div class="meta-item">
-          <span class="meta-label">Yield</span>
-          <span class="meta-value">{recipe.yieldVal}</span>
+        <div id="instructions-col">
+          <h2 style="font-family:var(--font-serif); font-size:1.3rem; margin-bottom:1rem; color:var(--color-ink);">Instructions</h2>
+          <div class="section-divider"><span>✦</span></div>
         </div>
       </div>
+
+      <!-- Notes accordion (built by JS) -->
+      <div id="notes-col" class="notes-section" style="display:none;"></div>
+
+      <!-- Fallback raw render -->
+      <div id="raw-render" set:html={htmlContent}></div>
     </div>
-
-    <!-- Recipe Hero Image -->
-    {imagePath && (
-      <img src={imagePath} alt={recipe.title} class="recipe-hero-image" />
-    )}
-
-    <!-- Dynamic Two-Column Layout -->
-    <div class="recipe-columns" id="structured-layout" style="display: none;">
-      <div class="ingredients-column" id="ingredients-col">
-        <h2>Ingredients</h2>
-      </div>
-      <div class="instructions-column" id="instructions-col">
-        <h2>Instructions</h2>
-      </div>
-    </div>
-
-    <!-- Fallback Content Container (Visible if JS is disabled) -->
-    <div id="raw-render" set:html={htmlContent}></div>
-  </div>
+  </main>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -110,108 +144,164 @@ const imagePath = hasImage ? `/images/${imageBasename}.jpg` : null;
       const structuredLayout = document.getElementById('structured-layout');
       const ingredientsCol = document.getElementById('ingredients-col');
       const instructionsCol = document.getElementById('instructions-col');
-      
+      const notesCol = document.getElementById('notes-col');
+
       if (!rawRender || !structuredLayout || !ingredientsCol || !instructionsCol) return;
-      
+
       const children = Array.from(rawRender.children);
-      let currentTargetCol: HTMLElement | null = null;
-      
+      let currentTarget: HTMLElement | null = null;
       let skipFirstH1 = true;
       let skipDescription = true;
-      
+      let inNotes = false;
+
       children.forEach((child) => {
-        const tagName = child.tagName;
-        const textContent = child.textContent || '';
-        
-        // Skip main title H1
-        if (tagName === 'H1' && skipFirstH1) {
-          skipFirstH1 = false;
-          return;
+        const tag = child.tagName;
+        const text = (child.textContent || '').toLowerCase().trim();
+
+        if (tag === 'H1' && skipFirstH1) { skipFirstH1 = false; return; }
+        if (tag === 'P' && skipDescription && !skipFirstH1) { skipDescription = false; return; }
+
+        if (currentTarget === null) {
+          if (tag === 'HR' || text.includes('prep time') || text.includes('cook time') || text.includes('yield')) return;
         }
-        
-        // Skip first paragraph (description)
-        if (tagName === 'P' && skipDescription && !skipFirstH1) {
-          skipDescription = false;
-          return;
-        }
-        
-        // Skip metadata bold tags and top dividers
-        if (currentTargetCol === null) {
-          if (
-            tagName === 'HR' || 
-            textContent.includes('Prep time:') || 
-            textContent.includes('Cook time:') || 
-            textContent.includes('Yield:')
-          ) {
+
+        if (tag === 'H2') {
+          if (text.includes('ingredient')) { currentTarget = ingredientsCol; inNotes = false; return; }
+          if (text.includes('step') || text.includes('instruction') || text.includes('method')) { currentTarget = instructionsCol; inNotes = false; return; }
+          if (text.includes('note') || text.includes('tip') || text.includes('origin') || text.includes('based on')) {
+            currentTarget = notesCol;
+            inNotes = true;
+            if (notesCol) {
+              notesCol.style.display = 'block';
+              const heading = document.createElement('h2');
+              heading.style.cssText = 'font-family:var(--font-serif);font-size:1.3rem;margin-bottom:1rem;color:var(--color-ink);';
+              heading.textContent = child.textContent || 'Notes';
+              notesCol.appendChild(heading);
+              const divider = document.createElement('div');
+              divider.className = 'section-divider';
+              divider.innerHTML = '<span>✦</span>';
+              notesCol.appendChild(divider);
+            }
             return;
           }
+          currentTarget = instructionsCol;
+          inNotes = false;
         }
-        
-        // Check for sections headers
-        if (tagName === 'H2') {
-          const text = textContent.toLowerCase().trim();
-          if (text.includes('ingredients')) {
-            currentTargetCol = ingredientsCol;
-            return; // Skip adding the duplicate H2
-          } else if (text.includes('steps') || text.includes('instructions')) {
-            currentTargetCol = instructionsCol;
-            return; // Skip adding the duplicate H2
-          } else {
-            currentTargetCol = instructionsCol; // Append notes/origins to instructions
-          }
-        }
-        
-        if (currentTargetCol) {
-          if (tagName === 'UL') {
-            child.classList.add('ingredients-list');
-          } else if (tagName === 'OL') {
-            child.classList.add('instructions-list');
-            
-            // Wire up interactive steps
-            const lis = child.querySelectorAll('li');
-            lis.forEach((li, idx) => {
-              li.classList.add('interactive-step');
-              
-              li.addEventListener('click', () => {
-                // Interactive clicking in cooking mode
-                if (document.body.classList.contains('cooking-mode-active')) {
-                  if (li.classList.contains('active')) {
-                    li.classList.remove('active');
-                    li.classList.add('completed');
-                  } else if (li.classList.contains('completed')) {
-                    li.classList.remove('completed');
-                  } else {
-                    const currentActive = instructionsCol.querySelector('li.active');
-                    if (currentActive) currentActive.classList.remove('active');
-                    li.classList.add('active');
-                  }
-                }
-              });
+
+        if (!currentTarget) return;
+
+        if (tag === 'UL' && !inNotes) {
+          // Ingredients — add checkbox UI
+          const ul = document.createElement('ul');
+          ul.className = 'ingredients-list';
+          Array.from(child.children).forEach((li) => {
+            const newLi = document.createElement('li');
+            const check = document.createElement('span');
+            check.className = 'ingredient-check';
+            check.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            const textSpan = document.createElement('span');
+            textSpan.textContent = li.textContent || '';
+            newLi.appendChild(check);
+            newLi.appendChild(textSpan);
+            newLi.addEventListener('click', () => newLi.classList.toggle('checked'));
+            ul.appendChild(newLi);
+          });
+          ingredientsCol.appendChild(ul);
+        } else if (tag === 'OL' && !inNotes) {
+          // Steps — numbered circles
+          const ol = document.createElement('ol');
+          ol.className = 'instructions-list';
+          let stepIndex = 0;
+          Array.from(child.children).forEach((li) => {
+            stepIndex++;
+            const newLi = document.createElement('li');
+            newLi.className = 'interactive-step';
+            const circle = document.createElement('span');
+            circle.className = 'step-circle';
+            circle.textContent = String(stepIndex);
+            const textSpan = document.createElement('span');
+            textSpan.style.flex = '1';
+            textSpan.textContent = li.textContent || '';
+            newLi.appendChild(circle);
+            newLi.appendChild(textSpan);
+            ol.appendChild(newLi);
+          });
+          instructionsCol.appendChild(ol);
+        } else if (inNotes && notesCol) {
+          // Notes — accordion items
+          if (tag === 'UL' || tag === 'OL') {
+            Array.from(child.children).forEach((li) => {
+              const item = document.createElement('div');
+              item.className = 'accordion-item';
+              const trigger = document.createElement('button');
+              trigger.className = 'accordion-trigger';
+              trigger.innerHTML = `<span>${li.textContent}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
+              trigger.addEventListener('click', () => item.classList.toggle('open'));
+              item.appendChild(trigger);
+              notesCol.appendChild(item);
             });
+          } else {
+            // Plain paragraph notes
+            const item = document.createElement('div');
+            item.className = 'accordion-item';
+            const trigger = document.createElement('button');
+            trigger.className = 'accordion-trigger';
+            const textPreview = (child.textContent || '').slice(0, 80) + ((child.textContent || '').length > 80 ? '…' : '');
+            trigger.innerHTML = `<span>${textPreview}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
+            const body = document.createElement('div');
+            body.className = 'accordion-body';
+            body.textContent = child.textContent || '';
+            trigger.addEventListener('click', () => item.classList.toggle('open'));
+            item.appendChild(trigger);
+            item.appendChild(body);
+            notesCol.appendChild(item);
           }
-          
-          currentTargetCol.appendChild(child);
+        } else {
+          currentTarget.appendChild(child.cloneNode(true));
         }
       });
-      
-      // Swap fallback rendering for structured two-column layout
+
       rawRender.style.display = 'none';
       structuredLayout.style.display = 'grid';
-      
-      // Cooking Mode Toggle Setup
-      const toggleCookingBtn = document.getElementById('toggle-cooking');
-      if (toggleCookingBtn) {
-        toggleCookingBtn.addEventListener('click', () => {
-          document.body.classList.toggle('cooking-mode-active');
-          toggleCookingBtn.classList.toggle('active');
-          
-          const steps = instructionsCol.querySelectorAll('.instructions-list li');
-          steps.forEach((step, idx) => {
-            step.classList.remove('active', 'completed');
-            if (document.body.classList.contains('cooking-mode-active') && idx === 0) {
-              step.classList.add('active');
-            }
-          });
+
+      // === COOKING MODE ===
+      const toggleBtn = document.getElementById('toggle-cooking');
+      const progressFill = document.getElementById('progress-fill') as HTMLElement;
+      const progressLabel = document.getElementById('progress-label');
+
+      const allSteps = instructionsCol.querySelectorAll('.interactive-step');
+      const totalSteps = allSteps.length;
+
+      function updateProgress() {
+        const done = instructionsCol.querySelectorAll('.interactive-step.completed').length;
+        const pct = totalSteps > 0 ? (done / totalSteps) * 100 : 0;
+        if (progressFill) progressFill.style.width = pct + '%';
+        if (progressLabel) progressLabel.textContent = `${done} / ${totalSteps} steps`;
+      }
+
+      allSteps.forEach((step) => {
+        step.addEventListener('click', () => {
+          if (!document.body.classList.contains('cooking-mode-active')) return;
+          step.classList.toggle('completed');
+          // remove active, set active to next uncompleted
+          allSteps.forEach(s => s.classList.remove('active'));
+          const nextUncompleted = Array.from(allSteps).find(s => !s.classList.contains('completed'));
+          if (nextUncompleted) nextUncompleted.classList.add('active');
+          updateProgress();
+        });
+      });
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+          const isActive = document.body.classList.toggle('cooking-mode-active');
+          toggleBtn.classList.toggle('active', isActive);
+          toggleBtn.innerHTML = isActive
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg> Stop Cooking`
+            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><polyline points="12 6 12 12 16 14"/></svg> Start Cooking`;
+
+          allSteps.forEach(s => s.classList.remove('active', 'completed'));
+          if (isActive && allSteps.length > 0) allSteps[0].classList.add('active');
+          updateProgress();
         });
       }
     });
