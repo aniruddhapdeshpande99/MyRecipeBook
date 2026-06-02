@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Footer from '../components/Footer.astro';
 
 interface Props {
   title: string;
@@ -55,9 +56,12 @@ const { title, description = "A personal collection of recipes, crafted for cook
       </a>
       <nav class="site-nav">
         <a href="/" class="nav-link">Recipes</a>
+        <a href="/#about" class="nav-link">About</a>
+        <a href="/#contact" class="nav-link">Suggest</a>
         <a href="/editor" class="nav-link nav-link--cta">+ Add Recipe</a>
       </nav>
     </header>
     <slot />
+    <Footer />
   </body>
 </html>
