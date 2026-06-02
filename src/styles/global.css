@@ -24,13 +24,13 @@
   --color-muted:         #5C6B5F;
   --color-border:        #DFD9CE; /* Spaced warm borders */
 
-  /* Dark mode palette */
-  --color-dark-bg:       #0F1A12;
-  --color-dark-surface:  #172019;
-  --color-dark-card:     #1E2B20;
-  --color-dark-border:   #2A3D2D;
-  --color-dark-text:     #E8EDE9;
-  --color-dark-muted:    #8FA693;
+  /* Dark mode palette — rustic warm forest & mud clay theme */
+  --color-dark-bg:       #191C17; /* Very deep warm earthy charcoal (forest shadow) */
+  --color-dark-surface:  #20241E; /* Dark rustic olive-tinted surface */
+  --color-dark-card:     #282D26; /* Warm clay-charcoal card background */
+  --color-dark-border:   #3B4238; /* Muted forest-mud border */
+  --color-dark-text:     #E8E5DD; /* Warm paper-white text for low eye strain */
+  --color-dark-muted:    #A39E93; /* Soft clay-beige for secondary metadata text */
 
   --font-serif: 'Lora', Georgia, serif;
   --font-sans:  'Inter', system-ui, sans-serif;
