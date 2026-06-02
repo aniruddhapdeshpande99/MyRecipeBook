@@ -1,0 +1,9 @@
+node_modules
+.astro
+dist
+.git
+.gitignore
+.vscode
+Dockerfile
+.dockerignore
+npm-debug.log*

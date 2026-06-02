@@ -23,6 +23,13 @@ const { title, description = "A beautiful, minimalist collection of curated reci
     <meta property="og:title" content={`${title} | The Modern Cookbook`} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+
+    <!-- PWA & Apple Web App Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="MyCookbook" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
     <header>
