@@ -1,0 +1,11 @@
+---
+// ContactSection.astro
+import ContactForm from './ContactForm.jsx';
+---
+<section id="contact" class="contact-section">
+  <div class="contact-section__inner">
+    <h2 class="contact-section__title">Suggest a Recipe</h2>
+    <p class="contact-section__desc">Have a recipe you'd like to see here? Drop it below.</p>
+    <ContactForm client:load />
+  </div>
+</section>

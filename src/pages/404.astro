@@ -1,0 +1,14 @@
+---
+// 404.astro — Astro auto-serves this for unmatched SSR routes
+import Layout from '../layouts/Layout.astro';
+---
+<Layout title="Page Not Found">
+  <main class="not-found-page">
+    <div class="not-found-inner">
+      <span class="not-found-emoji" aria-hidden="true">🍳</span>
+      <h1 class="not-found-title">Recipe Not Found</h1>
+      <p class="not-found-desc">This page doesn't exist — maybe the recipe got eaten.</p>
+      <a href="/" class="action-btn" style="margin-top:1rem">← Back to the Cookbook</a>
+    </div>
+  </main>
+</Layout>
