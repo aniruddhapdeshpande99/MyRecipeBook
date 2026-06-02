@@ -32,12 +32,31 @@ const { title, description = "A beautiful, minimalist collection of curated reci
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
-    <header>
-      <div class="logo">
-        <a href="/">Sven's CookBook</a>
-      </div>
-      <nav>
-        <a href="/">All Recipes</a>
+    <header class="site-header">
+      <a href="/" class="site-logo" aria-label="Sven's Cookbook Home">
+        <!-- Inline cooking icon: crossed knife + pot -->
+        <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <!-- Dutch oven / pot -->
+          <ellipse cx="28" cy="34" rx="11" ry="7" fill="currentColor" opacity="0.9"/>
+          <rect x="17" y="28" width="22" height="6" rx="2" fill="currentColor" opacity="0.9"/>
+          <rect x="14" y="29" width="4" height="3" rx="1" fill="currentColor" opacity="0.7"/>
+          <rect x="30" y="29" width="4" height="3" rx="1" fill="currentColor" opacity="0.7"/>
+          <circle cx="28" cy="27" r="2" fill="currentColor" opacity="0.8"/>
+          <!-- Chef's knife -->
+          <line x1="10" y1="10" x2="32" y2="30" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M10 10 L18 6 L22 14 Z" fill="currentColor" opacity="0.9"/>
+          <!-- Second knife (paring knife) -->
+          <line x1="22" y1="8" x2="38" y2="26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
+          <path d="M22 8 L27 5 L30 11 Z" fill="currentColor" opacity="0.6"/>
+        </svg>
+        <div class="logo-text">
+          <span class="logo-name">Sven's</span>
+          <span class="logo-sub">Cookbook</span>
+        </div>
+      </a>
+      <nav class="site-nav">
+        <a href="/" class="nav-link">Recipes</a>
+        <a href="/editor" class="nav-link nav-link--cta">+ Add Recipe</a>
       </nav>
     </header>
     <main>

@@ -38,6 +38,114 @@
   }
 }
 
+/* ============================================================
+   SITE HEADER — Premium Editorial Style
+   ============================================================ */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 2rem;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Logo lockup: icon + wordmark */
+.site-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--accent-green);
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.site-logo:hover .logo-icon {
+  transform: rotate(-8deg) scale(1.08);
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.logo-name {
+  font-family: 'Lora', serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  letter-spacing: -0.01em;
+}
+
+.logo-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--accent-green);
+}
+
+/* Navigation */
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.nav-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--accent-green);
+}
+
+.nav-link--cta {
+  padding: 0.45rem 1rem;
+  background-color: var(--accent-green);
+  color: #fff !important;
+  border-radius: 20px;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-link--cta:hover {
+  background-color: var(--accent-green-hover);
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .site-header {
+    padding: 0.75rem 1rem;
+  }
+  .logo-name {
+    font-size: 1.05rem;
+  }
+  .nav-link:not(.nav-link--cta) {
+    display: none;
+  }
+}
+
 body {
   background-color: var(--bg-main);
   color: var(--text-main);
