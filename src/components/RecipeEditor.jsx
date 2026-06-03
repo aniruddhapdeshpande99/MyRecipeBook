@@ -41,12 +41,12 @@ export default function RecipeEditor({ existingSlug }) {
         if (Array.isArray(data.ingredients) && data.ingredients.length > 0) {
           setIngredients(data.ingredients.map(ing =>
             typeof ing === 'string'
-              ? { id: crypto.randomUUID(), item: ing, proportion: '' }
-              : { id: crypto.randomUUID(), item: ing.item || '', proportion: ing.proportion || '' }
+              ? { id: uuid(), item: ing, proportion: '' }
+              : { id: uuid(), item: ing.item || '', proportion: ing.proportion || '' }
           ));
         }
         if (Array.isArray(data.steps) && data.steps.length > 0) {
-          setSteps(data.steps.map(s => ({ id: crypto.randomUUID(), val: typeof s === 'string' ? s : String(s) })));
+          setSteps(data.steps.map(s => ({ id: uuid(), val: typeof s === 'string' ? s : String(s) })));
         }
         setIsLoading(false);
       })
