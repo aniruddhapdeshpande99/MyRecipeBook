@@ -30,6 +30,27 @@ export async function GET({ params }: { params: { path: string } }) {
       }
     });
   } catch (error) {
-    return new Response(null, { status: 404 });
+    // Fallback to checking the legacy public/images directory
+    const legacyPath = path.join(process.cwd(), 'public', 'images', safePath);
+    try {
+      const data = await fs.readFile(legacyPath);
+      const ext = path.extname(legacyPath).toLowerCase();
+      
+      let mimeType = 'image/jpeg';
+      if (ext === '.png') mimeType = 'image/png';
+      else if (ext === '.gif') mimeType = 'image/gif';
+      else if (ext === '.webp') mimeType = 'image/webp';
+      else if (ext === '.svg') mimeType = 'image/svg+xml';
+
+      return new Response(data, {
+        status: 200,
+        headers: {
+          'Content-Type': mimeType,
+          'Cache-Control': 'public, max-age=31536000'
+        }
+      });
+    } catch (fallbackError) {
+      return new Response(null, { status: 404 });
+    }
   }
 }
