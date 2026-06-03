@@ -20,7 +20,15 @@ export async function GET({ request }: { request: Request }) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    const filePath = path.join(dataDir, `${safeSlug}.md`);
+    
+    // Check both new structured storage and old flat storage
+    let filePath = path.join(dataDir, safeSlug, `${safeSlug}.md`);
+    try {
+      await fs.access(filePath);
+    } catch {
+      filePath = path.join(dataDir, `${safeSlug}.md`);
+    }
+
     try {
       const raw = await fs.readFile(filePath, 'utf-8');
       const parsed = matter(raw);
@@ -76,9 +84,9 @@ export async function GET({ request }: { request: Request }) {
       let imageUrl = parsed.data.imageUrl || parsedRecipe.imageUrl || '';
       if (!imageUrl) {
         try {
-          const publicImagePath = path.join(process.cwd(), 'public', 'images', `${safeSlug}.jpg`);
-          await fs.access(publicImagePath);
-          imageUrl = `/images/${safeSlug}.jpg`;
+          const structuredImagePath = path.join(dataDir, safeSlug, `hero.jpg`);
+          await fs.access(structuredImagePath);
+          imageUrl = `/images/${safeSlug}/hero.jpg`;
         } catch {
           // File doesn't exist
         }
@@ -136,6 +144,9 @@ export async function POST({ request }: { request: Request }) {
   
   const recipeSlug = safeSlug || safeTitle;
   let finalImageUrl = imageUrl;
+  
+  const recipeDir = path.join(process.cwd(), 'data', 'recipes', recipeSlug);
+  await fs.mkdir(recipeDir, { recursive: true });
 
   if (imageUrl && imageUrl.startsWith('data:image/')) {
     const match = imageUrl.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -143,28 +154,24 @@ export async function POST({ request }: { request: Request }) {
       const mimeType = match[1];
       const base64Data = match[2];
       const extension = mimeType.split('/')[1] || 'jpg';
-      const imageFilename = `${recipeSlug}.${extension}`;
-      const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', imageFilename);
-      const distImagePath = path.join(process.cwd(), 'dist', 'client', 'images', imageFilename);
+      const imageFilename = `hero.${extension}`;
+      const imagePathOnDisk = path.join(recipeDir, imageFilename);
       
-      await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
       const buffer = Buffer.from(base64Data, 'base64');
       await fs.writeFile(imagePathOnDisk, buffer);
       
-      try {
-        await fs.mkdir(path.dirname(distImagePath), { recursive: true });
-        await fs.writeFile(distImagePath, buffer);
-      } catch (e) {
-        // Ignore if dist/client doesn't exist yet
-      }
-      
-      finalImageUrl = `/images/${imageFilename}`;
+      finalImageUrl = `/images/${recipeSlug}/${imageFilename}`;
     }
   }
 
   // Process miseEnPlace images
   const finalMiseEnPlace = [];
   if (Array.isArray(miseEnPlace)) {
+    const miseDir = path.join(recipeDir, 'miseenplace');
+    if (miseEnPlace.some(img => img && img.startsWith('data:image/'))) {
+      await fs.mkdir(miseDir, { recursive: true });
+    }
+    
     for (let i = 0; i < miseEnPlace.length; i++) {
       const img = miseEnPlace[i];
       if (img && img.startsWith('data:image/')) {
@@ -172,22 +179,13 @@ export async function POST({ request }: { request: Request }) {
         if (match) {
           const mimeType = match[1];
           const extension = mimeType.split('/')[1] || 'jpg';
-          const filename = `${recipeSlug}-mise-${Date.now()}-${i}.${extension}`;
-          const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', 'miseenplace', filename);
-          const distImagePath = path.join(process.cwd(), 'dist', 'client', 'images', 'miseenplace', filename);
+          const filename = `mise-${Date.now()}-${i}.${extension}`;
+          const imagePathOnDisk = path.join(miseDir, filename);
           
-          await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
           const buffer = Buffer.from(match[2], 'base64');
           await fs.writeFile(imagePathOnDisk, buffer);
           
-          try {
-            await fs.mkdir(path.dirname(distImagePath), { recursive: true });
-            await fs.writeFile(distImagePath, buffer);
-          } catch (e) {
-            // Ignore if dist/client doesn't exist yet
-          }
-          
-          finalMiseEnPlace.push(`/images/miseenplace/${filename}`);
+          finalMiseEnPlace.push(`/images/${recipeSlug}/miseenplace/${filename}`);
         }
       } else if (img) {
         // It's already a URL
@@ -196,9 +194,6 @@ export async function POST({ request }: { request: Request }) {
     }
   }
 
-  const dataDir = path.join(process.cwd(), 'data', 'recipes');
-  await fs.mkdir(dataDir, { recursive: true });
-  
   let markdownBody = description || '';
   if (ingredients && ingredients.length > 0) {
     markdownBody += '\n\n## Ingredients\n\n';
@@ -216,10 +211,12 @@ export async function POST({ request }: { request: Request }) {
   const fileContent = matter.stringify(markdownBody, {
     title, category, prepTime, cookTime, yieldVal, imageUrl: finalImageUrl, miseEnPlace: finalMiseEnPlace, ingredients, steps,
   });
-  const filename = safeSlug ? `${safeSlug}.md` : `${safeTitle}.md`;
-  await fs.writeFile(path.join(dataDir, filename), fileContent);
+  
+  const mdFilename = `${recipeSlug}.md`;
+  await fs.writeFile(path.join(recipeDir, mdFilename), fileContent);
+  
   return new Response(
-    JSON.stringify({ success: true, slug: filename.replace('.md', '') }),
+    JSON.stringify({ success: true, slug: recipeSlug }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
 }

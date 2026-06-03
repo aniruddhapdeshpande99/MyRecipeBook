@@ -1,0 +1,564 @@
+﻿diff --git a/src/components/RecipeEditor.jsx b/src/components/RecipeEditor.jsx
+index 6e98a5c..d06631d 100644
+--- a/src/components/RecipeEditor.jsx
++++ b/src/components/RecipeEditor.jsx
+@@ -15,7 +15,9 @@ export default function RecipeEditor({ existingSlug }) {
+   const [ingredients, setIngredients] = useState([{ id: uuid(), item: '', proportion: '' }]);
+   const [steps, setSteps] = useState([{ id: uuid(), val: '' }]);
+   const [imageUrl, setImageUrl] = useState('');
++  const [miseEnPlaceImages, setMiseEnPlaceImages] = useState([]);
+   const [isDragActive, setIsDragActive] = useState(false);
++  const [isMiseDragActive, setIsMiseDragActive] = useState(false);
+   const [isSaving, setIsSaving] = useState(false);
+   const [isLoading, setIsLoading] = useState(!!existingSlug);
+   const [saveMessage, setSaveMessage] = useState('');
+@@ -32,6 +34,7 @@ export default function RecipeEditor({ existingSlug }) {
+         setCategory(data.category || '');
+         setDescription(data.description || '');
+         setImageUrl(data.imageUrl || '');
++        setMiseEnPlaceImages(data.miseEnPlace || []);
+         setPrepTime(data.prepTime === 'N/A' ? '' : (data.prepTime || ''));
+         setCookTime(data.cookTime === 'N/A' ? '' : (data.cookTime || ''));
+         setYieldVal(data.yieldVal === 'N/A' ? '' : (data.yieldVal || ''));
+@@ -101,6 +104,61 @@ export default function RecipeEditor({ existingSlug }) {
+     }
+   };
+ 
++  const handleMiseDrag = (e) => {
++    e.preventDefault();
++    e.stopPropagation();
++    if (e.type === "dragenter" || e.type === "dragover") {
++      setIsMiseDragActive(true);
++    } else if (e.type === "dragleave") {
++      setIsMiseDragActive(false);
++    }
++  };
++
++  const processMiseEnPlaceFiles = (files) => {
++    const newImages = [];
++    let processed = 0;
++    
++    Array.from(files).forEach(file => {
++      if (!file || !file.type.startsWith('image/')) {
++        processed++;
++        if (processed === files.length && newImages.length > 0) {
++          setMiseEnPlaceImages(prev => [...prev, ...newImages]);
++        }
++        return;
++      }
++      
++      const reader = new FileReader();
++      reader.onload = () => {
++        newImages.push(reader.result);
++        processed++;
++        if (processed === files.length) {
++          setMiseEnPlaceImages(prev => [...prev, ...newImages]);
++        }
++      };
++      reader.readAsDataURL(file);
++    });
++  };
++
++  const handleMiseDrop = (e) => {
++    e.preventDefault();
++    e.stopPropagation();
++    setIsMiseDragActive(false);
++    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
++      processMiseEnPlaceFiles(e.dataTransfer.files);
++    }
++  };
++
++  const handleMiseFileChange = (e) => {
++    e.preventDefault();
++    if (e.target.files && e.target.files.length > 0) {
++      processMiseEnPlaceFiles(e.target.files);
++    }
++  };
++
++  const removeMiseEnPlaceImage = (index) => {
++    setMiseEnPlaceImages(prev => prev.filter((_, i) => i !== index));
++  };
++
+   const handleSave = async (e) => {
+     e.preventDefault();
+     setIsSaving(true);
+@@ -120,6 +178,7 @@ export default function RecipeEditor({ existingSlug }) {
+           category,
+           description,
+           imageUrl,
++          miseEnPlace: miseEnPlaceImages,
+           prepTime,
+           cookTime,
+           yieldVal,
+@@ -286,6 +345,117 @@ export default function RecipeEditor({ existingSlug }) {
+         )}
+       </div>
+ 
++      <div className="form-group">
++        <label>Mise En Place Images</label>
++        {miseEnPlaceImages.length > 0 && (
++          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
++            {miseEnPlaceImages.map((imgUrl, idx) => (
++              <div key={idx} style={{
++                position: 'relative',
++                borderRadius: '8px',
++                border: '2px solid var(--color-border)',
++                overflow: 'hidden',
++                backgroundColor: 'var(--color-cream-surface)',
++                width: '120px',
++                height: '120px',
++                display: 'flex',
++                alignItems: 'center',
++                justifyContent: 'center'
++              }}>
++                <img 
++                  src={imgUrl} 
++                  alt={`Mise en place ${idx + 1}`} 
++                  style={{
++                    width: '100%',
++                    height: '100%',
++                    objectFit: 'cover'
++                  }}
++                />
++                <button
++                  type="button"
++                  onClick={(e) => { e.stopPropagation(); removeMiseEnPlaceImage(idx); }}
++                  style={{
++                    position: 'absolute',
++                    top: '4px',
++                    right: '4px',
++                    backgroundColor: 'var(--color-terracotta)',
++                    color: 'white',
++                    border: 'none',
++                    borderRadius: '50%',
++                    width: '24px',
++                    height: '24px',
++                    cursor: 'pointer',
++                    display: 'flex',
++                    alignItems: 'center',
++                    justifyContent: 'center',
++                    fontWeight: 'bold',
++                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
++                    fontSize: '12px'
++                  }}
++                  title="Remove image"
++                >
++                  Γ£ò
++                </button>
++              </div>
++            ))}
++          </div>
++        )}
++        
++        <div
++          onDragEnter={handleMiseDrag}
++          onDragOver={handleMiseDrag}
++          onDragLeave={handleMiseDrag}
++          onDrop={handleMiseDrop}
++          className={`file-upload-zone ${isMiseDragActive ? 'drag-active' : ''}`}
++          style={{
++            border: '2px dashed var(--color-border)',
++            borderRadius: '8px',
++            padding: '1.5rem',
++            textAlign: 'center',
++            backgroundColor: isMiseDragActive ? 'rgba(62, 86, 67, 0.05)' : 'transparent',
++            borderColor: isMiseDragActive ? 'var(--color-sage)' : 'var(--color-border)',
++            cursor: 'pointer',
++            transition: 'all 0.2s ease',
++            display: 'flex',
++            flexDirection: 'column',
++            alignItems: 'center',
++            justifyContent: 'center',
++            minHeight: '120px'
++          }}
++          onClick={() => document.getElementById('mise-image-input').click()}
++        >
++          <svg 
++            width="32" 
++            height="32" 
++            viewBox="0 0 24 24" 
++            fill="none" 
++            stroke="var(--color-sage)" 
++            strokeWidth="2" 
++            strokeLinecap="round" 
++            strokeLinejoin="round"
++            style={{ marginBottom: '0.75rem', opacity: 0.8 }}
++          >
++            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
++            <circle cx="8.5" cy="8.5" r="1.5"/>
++            <polyline points="21 15 16 10 5 21"/>
++          </svg>
++          <p style={{ margin: '0 0 0.5rem 0', fontWeight: '500', color: 'var(--color-sage)', fontSize: '0.95rem' }}>
++            Add Mise En Place images
++          </p>
++          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-muted)' }}>
++            Drop images here or click to browse (multiple allowed)
++          </p>
++          <input
++            id="mise-image-input"
++            type="file"
++            accept="image/*"
++            multiple
++            onChange={handleMiseFileChange}
++            style={{ display: 'none' }}
++          />
++        </div>
++      </div>
++
+       <div className="form-group">
+         <label>Description *</label>
+         <textarea
+diff --git a/src/pages/api/recipes.ts b/src/pages/api/recipes.ts
+index df597fa..d8dad33 100644
+--- a/src/pages/api/recipes.ts
++++ b/src/pages/api/recipes.ts
+@@ -128,7 +128,7 @@ export async function GET({ request }: { request: Request }) {
+ 
+ export async function POST({ request }: { request: Request }) {
+   const data = await request.json();
+-  const { slug, title, category, ingredients, steps, description, imageUrl, prepTime, cookTime, yieldVal } = data;
++  const { slug, title, category, ingredients, steps, description, imageUrl, miseEnPlace, prepTime, cookTime, yieldVal } = data;
+   const safeSlug = slug ? sanitiseSlug(slug) : '';
+   const safeTitle = title
+     ? title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+@@ -146,10 +146,7 @@ export async function POST({ request }: { request: Request }) {
+       const imageFilename = `${recipeSlug}.${extension}`;
+       const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', imageFilename);
+       
+-      // Ensure directory exists
+       await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
+-      
+-      // Save decoded buffer
+       const buffer = Buffer.from(base64Data, 'base64');
+       await fs.writeFile(imagePathOnDisk, buffer);
+       
+@@ -157,10 +154,35 @@ export async function POST({ request }: { request: Request }) {
+     }
+   }
+ 
++  // Process miseEnPlace images
++  const finalMiseEnPlace = [];
++  if (Array.isArray(miseEnPlace)) {
++    for (let i = 0; i < miseEnPlace.length; i++) {
++      const img = miseEnPlace[i];
++      if (img && img.startsWith('data:image/')) {
++        const match = img.match(/^data:(image\/\w+);base64,(.+)$/);
++        if (match) {
++          const extension = match[1] === 'image/png' ? 'png' : 'jpg';
++          const filename = `${recipeSlug}-mise-${Date.now()}-${i}.${extension}`;
++          const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', 'miseenplace', filename);
++          
++          await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
++          const buffer = Buffer.from(match[2], 'base64');
++          await fs.writeFile(imagePathOnDisk, buffer);
++          
++          finalMiseEnPlace.push(`/images/miseenplace/${filename}`);
++        }
++      } else if (img) {
++        // It's already a URL
++        finalMiseEnPlace.push(img);
++      }
++    }
++  }
++
+   const dataDir = path.join(process.cwd(), 'data', 'recipes');
+   await fs.mkdir(dataDir, { recursive: true });
+   const fileContent = matter.stringify(description || '', {
+-    title, category, prepTime, cookTime, yieldVal, imageUrl: finalImageUrl, ingredients, steps,
++    title, category, prepTime, cookTime, yieldVal, imageUrl: finalImageUrl, miseEnPlace: finalMiseEnPlace, ingredients, steps,
+   });
+   const filename = safeSlug ? `${safeSlug}.md` : `${safeTitle}.md`;
+   await fs.writeFile(path.join(dataDir, filename), fileContent);
+diff --git a/src/pages/recipes/[...slug].astro b/src/pages/recipes/[...slug].astro
+index a21e84c..f76971b 100644
+--- a/src/pages/recipes/[...slug].astro
++++ b/src/pages/recipes/[...slug].astro
+@@ -84,6 +84,16 @@ try {
+             </svg>
+             Edit Recipe
+           </a>
++          {recipe.miseEnPlace && recipe.miseEnPlace.length > 0 && (
++            <button id="btn-mise-en-place" class="action-btn" title="View Mise En Place" data-images={JSON.stringify(recipe.miseEnPlace)}>
++              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
++                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
++                <circle cx="8.5" cy="8.5" r="1.5"/>
++                <polyline points="21 15 16 10 5 21"/>
++              </svg>
++              Mise En Place
++            </button>
++          )}
+           <button onclick="window.print()" class="action-btn" title="Print recipe">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <polyline points="6 9 6 2 18 2 18 9"/>
+@@ -163,10 +173,12 @@ try {
+                 day: 'numeric'
+               });
+               return (
+-                <div class="diary-card">
+-                  <img src={entry.imagePath} alt={entry.caption || "Diary Entry"} class="diary-card-img" />
++                <div class="diary-card gallery-trigger" data-image={entry.imagePath} data-caption={entry.caption || formattedDate}>
++                  <div class="diary-card-img-wrapper" style="position: relative;">
++                    <img src={entry.imagePath} alt={entry.caption || "Diary Entry"} class="diary-card-img" />
++                    <span class="diary-date-overlay">{formattedDate}</span>
++                  </div>
+                   <div class="diary-card-body">
+-                    <span class="diary-card-date">{formattedDate}</span>
+                     {entry.caption && <p class="diary-card-caption">{entry.caption}</p>}
+                   </div>
+                 </div>
+@@ -214,6 +226,21 @@ try {
+         </div>
+       </div>
+ 
++      <!-- Gallery Carousel Modal -->
++      <div id="gallery-carousel-modal" class="gallery-modal-overlay" style="display: none;">
++        <button id="gallery-carousel-close" class="gallery-nav-btn gallery-close-btn" aria-label="Close carousel">Γ£ò</button>
++        <button id="gallery-carousel-prev" class="gallery-nav-btn gallery-prev-btn" aria-label="Previous image">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
++        </button>
++        <div class="gallery-carousel-content">
++          <img id="gallery-carousel-img" src="" alt="Gallery Image" />
++          <p id="gallery-carousel-caption" class="gallery-carousel-caption"></p>
++        </div>
++        <button id="gallery-carousel-next" class="gallery-nav-btn gallery-next-btn" aria-label="Next image">
++          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
++        </button>
++      </div>
++
+       <!-- Fallback raw render -->
+       <div id="raw-render" set:html={htmlContent}></div>
+     </div>
+@@ -631,6 +658,95 @@ try {
+           }
+         });
+       }
++
++      // === GALLERY CAROUSEL LOGIC ===
++      const galleryModal = document.getElementById('gallery-carousel-modal');
++      const galleryImg = document.getElementById('gallery-carousel-img') as HTMLImageElement;
++      const galleryCaption = document.getElementById('gallery-carousel-caption');
++      const galleryCloseBtn = document.getElementById('gallery-carousel-close');
++      const galleryPrevBtn = document.getElementById('gallery-carousel-prev');
++      const galleryNextBtn = document.getElementById('gallery-carousel-next');
++      
++      let currentGalleryImages: { src: string, caption: string }[] = [];
++      let currentGalleryIndex = 0;
++
++      function openGalleryCarousel(images: { src: string, caption: string }[], startIndex = 0) {
++        currentGalleryImages = images;
++        currentGalleryIndex = startIndex;
++        updateGalleryCarousel();
++        if (galleryModal) galleryModal.style.display = 'flex';
++        document.body.style.overflow = 'hidden';
++      }
++
++      function updateGalleryCarousel() {
++        if (!currentGalleryImages.length) return;
++        const current = currentGalleryImages[currentGalleryIndex];
++        if (galleryImg) galleryImg.src = current.src;
++        if (galleryCaption) galleryCaption.textContent = current.caption || '';
++        
++        if (galleryPrevBtn) galleryPrevBtn.style.visibility = currentGalleryIndex > 0 ? 'visible' : 'hidden';
++        if (galleryNextBtn) galleryNextBtn.style.visibility = currentGalleryIndex < currentGalleryImages.length - 1 ? 'visible' : 'hidden';
++      }
++
++      function closeGalleryCarousel() {
++        if (galleryModal) galleryModal.style.display = 'none';
++        document.body.style.overflow = '';
++        currentGalleryImages = [];
++      }
++
++      function nextGalleryImage() {
++        if (currentGalleryIndex < currentGalleryImages.length - 1) {
++          currentGalleryIndex++;
++          updateGalleryCarousel();
++        }
++      }
++
++      function prevGalleryImage() {
++        if (currentGalleryIndex > 0) {
++          currentGalleryIndex--;
++          updateGalleryCarousel();
++        }
++      }
++
++      if (galleryCloseBtn) galleryCloseBtn.addEventListener('click', closeGalleryCarousel);
++      if (galleryNextBtn) galleryNextBtn.addEventListener('click', (e) => { e.stopPropagation(); nextGalleryImage(); });
++      if (galleryPrevBtn) galleryPrevBtn.addEventListener('click', (e) => { e.stopPropagation(); prevGalleryImage(); });
++      if (galleryModal) {
++        galleryModal.addEventListener('click', (e) => {
++          if (e.target === galleryModal) closeGalleryCarousel();
++        });
++      }
++
++      document.addEventListener('keydown', (e) => {
++        if (galleryModal && galleryModal.style.display === 'flex') {
++          if (e.key === 'Escape') closeGalleryCarousel();
++          else if (e.key === 'ArrowRight') nextGalleryImage();
++          else if (e.key === 'ArrowLeft') prevGalleryImage();
++        }
++      });
++
++      const btnMise = document.getElementById('btn-mise-en-place');
++      if (btnMise) {
++        btnMise.addEventListener('click', () => {
++          try {
++            const urls = JSON.parse(btnMise.getAttribute('data-images') || '[]');
++            const images = urls.map((url: string, i: number) => ({ src: url, caption: `Mise En Place (${i + 1}/${urls.length})` }));
++            if (images.length > 0) openGalleryCarousel(images, 0);
++          } catch(e) {}
++        });
++      }
++
++      const diaryTriggers = document.querySelectorAll('.gallery-trigger');
++      const allDiaryImages = Array.from(diaryTriggers).map(t => ({
++        src: t.getAttribute('data-image') || '',
++        caption: t.getAttribute('data-caption') || ''
++      }));
++      
++      diaryTriggers.forEach((trigger, idx) => {
++        trigger.addEventListener('click', () => {
++          openGalleryCarousel(allDiaryImages, idx);
++        });
++      });
+     });
+   </script>
+ 
+@@ -839,22 +955,33 @@ try {
+       background-color: var(--color-dark-card);
+       border-color: var(--color-dark-border);
+     }
+-    .diary-card-img {
++    .diary-card-img-wrapper {
++      width: 100%;
+       height: 150px;
++    }
++    .diary-card-img {
++      height: 100%;
+       width: 100%;
+       object-fit: cover;
+     }
++    .diary-date-overlay {
++      position: absolute;
++      bottom: 8px;
++      right: 8px;
++      background-color: rgba(0, 0, 0, 0.6);
++      color: white;
++      padding: 4px 8px;
++      border-radius: 4px;
++      font-size: 0.75rem;
++      font-weight: 600;
++      backdrop-filter: blur(4px);
++    }
+     .diary-card-body {
+       padding: 0.75rem;
+       display: flex;
+       flex-direction: column;
+       gap: 0.25rem;
+     }
+-    .diary-card-date {
+-      font-size: 0.75rem;
+-      color: var(--color-terracotta);
+-      font-weight: 600;
+-    }
+     .diary-card-caption {
+       font-size: 0.85rem;
+       color: var(--color-ink-soft);
+@@ -863,5 +990,97 @@ try {
+     html.dark .diary-card-caption {
+       color: var(--color-dark-text);
+     }
++    .gallery-trigger {
++      cursor: pointer;
++    }
++    
++    /* Global Carousel Styles */
++    .gallery-carousel-content {
++      display: flex;
++      flex-direction: column;
++      align-items: center;
++      justify-content: center;
++      max-width: 90vw;
++      max-height: 90vh;
++    }
++    #gallery-carousel-img {
++      max-width: 100%;
++      max-height: 80vh;
++      object-fit: contain;
++      border-radius: 8px;
++      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
++    }
++    .gallery-carousel-caption {
++      color: white;
++      margin-top: 1rem;
++      font-size: 1.1rem;
++      text-align: center;
++      background-color: rgba(0,0,0,0.5);
++      padding: 0.5rem 1rem;
++      border-radius: 8px;
++      backdrop-filter: blur(4px);
++    }
++    .gallery-nav-btn {
++      background: rgba(0,0,0,0.4);
++      color: white;
++      border: 2px solid rgba(255,255,255,0.2);
++      border-radius: 50%;
++      width: 50px;
++      height: 50px;
++      display: flex;
++      align-items: center;
++      justify-content: center;
++      cursor: pointer;
++      position: absolute;
++      top: 50%;
++      transform: translateY(-50%);
++      transition: all 0.2s;
++    }
++    .gallery-nav-btn:hover {
++      background: rgba(0,0,0,0.8);
++      border-color: rgba(255,255,255,0.6);
++      transform: translateY(-50%) scale(1.1);
++    }
++    .gallery-prev-btn {
++      left: 20px;
++    }
++    .gallery-next-btn {
++      right: 20px;
++    }
++    .gallery-close-btn {
++      top: 30px;
++      right: 30px;
++      transform: none;
++      width: 40px;
++      height: 40px;
++      font-size: 1.5rem;
++    }
++    .gallery-close-btn:hover {
++      transform: scale(1.1);
++    }
++
++    @media print {
++      .diary-gallery-section,
++      .recipe-actions,
++      .back-link,
++      .cooking-progress,
++      .site-header,
++      .theme-toggle-btn {
++        display: none !important;
++      }
++      body {
++        background-color: white !important;
++        color: black !important;
++      }
++      .recipe-detail-header h1,
++      .recipe-subheading,
++      .recipe-columns h2 {
++        color: black !important;
++      }
++      .interactive-step {
++        border: none !important;
++        padding-left: 0 !important;
++      }
++    }
+   </style>
+ </Layout>
