@@ -188,9 +188,15 @@ try {
 
       <!-- Cooking Diary section -->
       <div class="diary-gallery-section">
-        <h2 class="diary-gallery-title">Cooking Diary ✦</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <h2 class="diary-gallery-title" style="margin-bottom: 0;">Cooking Diary ✦</h2>
+          <button type="button" class="action-btn direct-add-diary-btn" style="padding: 0.4rem 0.8rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Add Photo
+          </button>
+        </div>
         {diaryEntries.length === 0 ? (
-          <p style="color: var(--color-muted); font-style: italic; margin-bottom: 2rem;">No diary entries yet. Complete cooking mode to log your first masterpiece!</p>
+          <p style="color: var(--color-muted); font-style: italic; margin-bottom: 2rem;">No diary entries yet. Complete cooking mode or add a photo manually to log your first masterpiece!</p>
         ) : (
           <div class="diary-grid" id="diary-entries-container" style="margin-bottom: 2rem;">
             {diaryEntries.map((entry: any) => {
@@ -460,6 +466,10 @@ try {
       function openDiaryModal() {
         if (diaryModal) diaryModal.style.display = 'flex';
       }
+
+      document.querySelectorAll('.direct-add-diary-btn').forEach(btn => {
+        btn.addEventListener('click', openDiaryModal);
+      });
 
       function closeDiaryModal() {
         if (diaryModal) diaryModal.style.display = 'none';
