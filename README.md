@@ -53,18 +53,13 @@ For a production environment, you can easily run the app using Docker Compose.
 - **Creating Recipes:** Use the web interface to add new recipes. You can specify ingredients, instructions, and metadata.
 - **Uploading Images:** You can upload images while creating or editing a recipe. The images are stored locally and linked to the recipe Markdown.
 
-## System Architecture & Walkthrough
+## System Architecture & Documentation
 
-The application is built to be a simple but robust local-first platform:
+For a deep dive into the specific code flows and subsystems, view our detailed architecture diagrams:
 
-1. **Frontend (React + Tailwind CSS in Astro):** 
-   - The user interface is driven by React components hosted inside an Astro framework.
-   - **Mobile Compatibility (UUID Fallback):** To ensure a seamless connection and usage from older mobile devices, particularly iOS Safari, the React frontend (`src/components/RecipeEditor.jsx`) uses a `crypto.randomUUID` fallback polyfill. This ensures that state management during recipe editing and component rendering does not break when accessing the app from your phone over the local network.
-2. **Backend (Astro Server-Side Rendering):** 
-   - Receives form submissions and image uploads from the frontend.
-   - Handles the conversion of recipe form data into Markdown content with frontmatter.
-3. **Storage (File System):** 
-   - No complex database is required. The backend directly reads and writes `.md` and image files to the local disk.
+- [API Data Flow](docs/architecture/api-data-flow.md): Understand how data is written to and read from the filesystem by Astro endpoints.
+- [Frontend Component State](docs/architecture/component-state.md): Detail on React state management, drag-and-drop processing, and the iOS Safari UUID fallback.
+- [Markdown Parsing Logic](docs/architecture/markdown-parsing.md): Visualizes the regex fallback chains used to parse legacy and modern recipe formats.
 
 ## Data Storage Structure
 
