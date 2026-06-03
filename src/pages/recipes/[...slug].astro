@@ -293,8 +293,14 @@ try {
         const tag = child.tagName;
         const text = (child.textContent || '').toLowerCase().trim();
 
-        if (tag === 'H1' && skipFirstH1) { skipFirstH1 = false; return; }
-        if (tag === 'P' && skipDescription && !skipFirstH1) { skipDescription = false; return; }
+        if (tag === 'H1' && skipFirstH1) { 
+          skipFirstH1 = false; 
+          if (!text.includes('ingredient') && !text.includes('instruction') && !text.includes('step') && !text.includes('method')) return; 
+        }
+        if (tag === 'P' && skipDescription) { 
+          skipDescription = false; 
+          if (!text.includes('ingredient') && !text.includes('instruction') && !text.includes('step') && !text.includes('method')) return; 
+        }
 
         if (currentTarget === null) {
           if (tag === 'HR' || text.includes('prep time') || text.includes('cook time') || text.includes('yield')) return;
