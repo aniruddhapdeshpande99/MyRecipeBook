@@ -44,7 +44,7 @@ sortedCategories.forEach((category) => {
 <Layout title="Home" description="A personal collection of recipes, crafted for cooking.">
 
   <!-- Hero Banner -->
-  <div class="hero-banner">
+  <div class="hero-banner is-expanded" id="hero-banner">
     <img
       src="/images/hero-banner.jpg"
       alt="A warm, cozy kitchen with sage green cabinets"
@@ -66,7 +66,7 @@ sortedCategories.forEach((category) => {
             aria-label="Search recipes"
           />
         </div>
-        <a href="#recipe-list" class="hero-banner__cta">
+        <a href="#recipe-list" class="hero-banner__cta" id="browse-btn">
           Browse Recipes
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="6 9 12 15 18 9"/>
@@ -75,7 +75,7 @@ sortedCategories.forEach((category) => {
       </div>
   </div>
 
-  <main>
+  <main id="main-content" style="opacity: 0; display: none; transition: opacity 0.8s ease;">
     <!-- Filters Bar -->
     <div class="filters-bar" id="filters-bar">
       <select class="filter-select" id="category-filter" aria-label="Filter by category">
@@ -162,6 +162,49 @@ sortedCategories.forEach((category) => {
     const filterClear = document.getElementById('filter-clear') as HTMLButtonElement;
     const categorySections = document.querySelectorAll('.category-section');
     const noResults = document.getElementById('no-results') as HTMLDivElement;
+    
+    // Animation logic
+    const mainContent = document.getElementById('main-content');
+    const heroBanner = document.getElementById('hero-banner');
+    const browseBtn = document.getElementById('browse-btn');
+
+    const isVisible = sessionStorage.getItem('recipes-visible') || window.location.hash;
+
+    if (isVisible && heroBanner && mainContent) {
+      heroBanner.classList.remove('is-expanded');
+      mainContent.style.display = 'block';
+      mainContent.style.opacity = '1';
+    }
+
+    function revealContent() {
+      if (heroBanner && heroBanner.classList.contains('is-expanded') && mainContent) {
+        heroBanner.classList.remove('is-expanded');
+        mainContent.style.display = 'block';
+        void mainContent.offsetWidth; // force reflow
+        mainContent.style.opacity = '1';
+        sessionStorage.setItem('recipes-visible', 'true');
+        
+        // Wait for height transition then scroll smoothly
+        setTimeout(() => {
+          mainContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+      }
+    }
+
+    if (browseBtn) {
+      browseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        revealContent();
+      });
+    }
+
+    if (searchBar) {
+      searchBar.addEventListener('focus', revealContent);
+      searchBar.addEventListener('input', () => {
+        revealContent();
+        applyFilters();
+      });
+    }
 
     function applyFilters() {
       const query = searchBar ? searchBar.value.toLowerCase().trim() : '';

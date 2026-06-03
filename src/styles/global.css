@@ -310,6 +310,11 @@ html.dark .theme-toggle-btn .moon-icon { display: none; }
   justify-content: center;
   flex-direction: column;
   text-align: center;
+  transition: height 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.hero-banner.is-expanded {
+  height: calc(100vh - 65px);
 }
 
 .hero-banner__img {
@@ -357,6 +362,7 @@ html.dark .theme-toggle-btn .moon-icon { display: none; }
 
 @media (max-width: 600px) {
   .hero-banner { height: 240px; }
+  .hero-banner.is-expanded { height: calc(100vh - 65px); }
 }
 
 /* ============================================================
