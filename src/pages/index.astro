@@ -49,9 +49,10 @@ sortedCategories.forEach((category) => {
       src="/images/hero-banner.jpg"
       alt="A warm, cozy kitchen with sage green cabinets"
       class="hero-banner__img"
+      id="hero-bg"
     />
     <div class="hero-banner__overlay"></div>
-      <div class="hero-banner__content">
+      <div class="hero-banner__content" id="hero-content">
         <h1 class="hero-banner__title">Sven's Cookbook</h1>
         <p class="hero-banner__subtitle">A personal collection of recipes, crafted with care.</p>
         <div class="hero-search">
@@ -90,7 +91,7 @@ sortedCategories.forEach((category) => {
     <!-- Recipe List -->
     <div id="recipe-list">
       {sortedCategories.map((category) => (
-        <section class="category-section fade-in-section" data-category={category}>
+        <section class="category-section" data-category={category}>
           <h2 class="category-title">{category}</h2>
           <div class="recipe-grid">
             {groupedRecipes[category].map((recipe) => (
@@ -163,19 +164,38 @@ sortedCategories.forEach((category) => {
     const categorySections = document.querySelectorAll('.category-section');
     const noResults = document.getElementById('no-results') as HTMLDivElement;
 
-    // Scroll Animation Observer
+    // Scroll-Linked Crossfade Animation
     document.addEventListener('DOMContentLoaded', () => {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-          }
-        });
-      }, { threshold: 0.1 });
+      const heroContent = document.getElementById('hero-content');
+      const heroBg = document.getElementById('hero-bg');
+      const heroOverlay = document.querySelector('.hero-banner__overlay');
+      const mainContent = document.querySelector('main');
+      
+      const fadeDistance = 400; // pixels to scroll before fully transitioned
 
-      document.querySelectorAll('.fade-in-section').forEach(section => {
-        observer.observe(section);
-      });
+      function updateFades() {
+        const scrollY = window.scrollY;
+        const progress = Math.min(scrollY / fadeDistance, 1);
+        
+        // Hero fades out
+        const heroOpacity = Math.max(1 - (progress * 1.5), 0);
+        if (heroContent) heroContent.style.opacity = heroOpacity.toString();
+        if (heroBg) heroBg.style.opacity = heroOpacity.toString();
+        if (heroOverlay) (heroOverlay as HTMLElement).style.opacity = heroOpacity.toString();
+        
+        // Main content fades in and slides up
+        if (mainContent) {
+          mainContent.style.opacity = progress.toString();
+          const translateY = 20 - (progress * 20);
+          mainContent.style.transform = `translateY(${translateY}px)`;
+        }
+      }
+
+      window.addEventListener('scroll', () => {
+        requestAnimationFrame(updateFades);
+      }, { passive: true });
+      
+      updateFades(); // Trigger on load
     });
 
     function applyFilters() {
