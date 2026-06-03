@@ -8,46 +8,56 @@ The diagram below illustrates how the React frontend components interact with th
 
 ```mermaid
 flowchart LR
-    subgraph Frontend ["Frontend (React)"]
-        Editor[Editor Component]
-        RecipeView[Recipe View Component]
+    subgraph Frontend ["Frontend (React/Astro)"]
+        Editor[Recipe Editor]
+        RecipeView[Recipe View]
+        DiaryView[Cooking Diary Modal]
     end
 
     subgraph API ["Backend (Astro API)"]
-        GET_List["GET /api/recipes"]
-        GET_One["GET /api/recipes?slug=[slug]"]
-        POST_Save["POST /api/recipes"]
+        GET_Recipes["GET /api/recipes"]
+        POST_Recipe["POST /api/recipes"]
+        POST_Diary["POST /api/diary"]
         GET_Img["GET /images/[...path]"]
     end
 
-    subgraph FS ["File System Storage"]
-        Folder["data/recipes/[slug]/"]
-        MD["recipe.md"]
-        ImgFolder["images/"]
-        Folder --> MD
-        Folder --> ImgFolder
+    subgraph FS ["File System (Persistent Volume)"]
+        subgraph Recipes ["data/recipes/"]
+            MD["[slug].md"]
+            ImgFolder["[slug]/"]
+            MiseFolder["[slug]/miseenplace/"]
+            ImgFolder --> MiseFolder
+        end
+        subgraph Diary ["data/diary/"]
+            DiaryJSON["[slug].json"]
+            DiaryImgFolder["images/"]
+        end
     end
 
     %% Frontend -> API
-    RecipeView -->|"Fetch recipe list"| GET_List
-    RecipeView -->|"Fetch recipe details"| GET_One
-    RecipeView -->|"Load recipe image"| GET_Img
-    Editor -->|"Save recipe & images"| POST_Save
+    RecipeView -->|"Fetch recipe list"| GET_Recipes
+    Editor -->|"Save recipe & images"| POST_Recipe
+    DiaryView -->|"Upload diary entry"| POST_Diary
+    RecipeView -->|"Load images"| GET_Img
+    DiaryView -->|"Load images"| GET_Img
 
     %% API -> FS
-    GET_List -.->|"Read directory contents"| Folder
-    GET_One -.->|"Read markdown content"| MD
-    POST_Save -.->|"Write markdown & upload images"| Folder
-    GET_Img -.->|"Read image files"| ImgFolder
+    GET_Recipes -.->|"Read markdown files"| MD
+    POST_Recipe -.->|"Write markdown"| MD
+    POST_Recipe -.->|"Write images"| ImgFolder
+    POST_Diary -.->|"Write JSON"| DiaryJSON
+    POST_Diary -.->|"Write images"| DiaryImgFolder
+    GET_Img -.->|"Read images"| ImgFolder
+    GET_Img -.->|"Read images"| DiaryImgFolder
 
     %% Styles
     classDef frontend fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px;
     classDef api fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
     classDef storage fill:#e8f5e9,stroke:#43a047,stroke-width:2px;
     
-    class Editor,RecipeView frontend;
-    class GET_List,GET_One,POST_Save,GET_Img api;
-    class Folder,MD,ImgFolder storage;
+    class Editor,RecipeView,DiaryView frontend;
+    class GET_Recipes,POST_Recipe,POST_Diary,GET_Img api;
+    class MD,ImgFolder,MiseFolder,DiaryJSON,DiaryImgFolder storage;
 ```
 
 ## Mobile Compatibility & Connection

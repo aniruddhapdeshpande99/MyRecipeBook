@@ -10,19 +10,16 @@ sequenceDiagram
     participant Parser as recipeParser.js
 
     %% GET Request Flow
-    Note over Client, FS: GET /api/recipes?slug={slug}
-    Client->>API: GET Request (Fetch Recipe)
-    API->>FS: Check if `data/recipes/{slug}/{slug}.md` exists
-    alt Exists in structured storage
-        FS-->>API: Return Markdown File
-    else Exists in flat storage
-        FS-->>API: Return `data/recipes/{slug}.md`
+    Note over Client, FS: GET /api/recipes
+    Client->>API: GET Request (Fetch All Recipes)
+    API->>FS: Recursively walk `data/recipes/` for `*.md`
+    FS-->>API: Return List of File Paths
+    loop For Each File
+        API->>FS: Read Markdown Content
+        FS-->>API: Raw Markdown
+        API->>API: Parse Frontmatter (gray-matter)
     end
-    API->>Parser: Parse Raw Markdown Content
-    Parser-->>API: Return Parsed frontmatter & body
-    API->>API: Extract missing ingredients/steps from body via Regex
-    API->>FS: Check for `hero.jpg` existence
-    API-->>Client: Return JSON Payload (200 OK)
+    API-->>Client: Return Array of Recipe JSONs (200 OK)
 
     %% POST Request Flow
     Note over Client, FS: POST /api/recipes
@@ -41,6 +38,6 @@ sequenceDiagram
     
     API->>API: Compile Ingredients & Instructions into Markdown String
     API->>API: stringify frontmatter (gray-matter)
-    API->>FS: Write `{slug}.md` to disk
+    API->>FS: Write `data/recipes/{slug}.md` to disk
     API-->>Client: Return Success JSON (200 OK)
 ```
