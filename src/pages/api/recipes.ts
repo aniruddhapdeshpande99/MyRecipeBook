@@ -145,10 +145,18 @@ export async function POST({ request }: { request: Request }) {
       const extension = mimeType.split('/')[1] || 'jpg';
       const imageFilename = `${recipeSlug}.${extension}`;
       const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', imageFilename);
+      const distImagePath = path.join(process.cwd(), 'dist', 'client', 'images', imageFilename);
       
       await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
       const buffer = Buffer.from(base64Data, 'base64');
       await fs.writeFile(imagePathOnDisk, buffer);
+      
+      try {
+        await fs.mkdir(path.dirname(distImagePath), { recursive: true });
+        await fs.writeFile(distImagePath, buffer);
+      } catch (e) {
+        // Ignore if dist/client doesn't exist yet
+      }
       
       finalImageUrl = `/images/${imageFilename}`;
     }
@@ -166,10 +174,18 @@ export async function POST({ request }: { request: Request }) {
           const extension = mimeType.split('/')[1] || 'jpg';
           const filename = `${recipeSlug}-mise-${Date.now()}-${i}.${extension}`;
           const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', 'miseenplace', filename);
+          const distImagePath = path.join(process.cwd(), 'dist', 'client', 'images', 'miseenplace', filename);
           
           await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
           const buffer = Buffer.from(match[2], 'base64');
           await fs.writeFile(imagePathOnDisk, buffer);
+          
+          try {
+            await fs.mkdir(path.dirname(distImagePath), { recursive: true });
+            await fs.writeFile(distImagePath, buffer);
+          } catch (e) {
+            // Ignore if dist/client doesn't exist yet
+          }
           
           finalMiseEnPlace.push(`/images/miseenplace/${filename}`);
         }
@@ -182,7 +198,22 @@ export async function POST({ request }: { request: Request }) {
 
   const dataDir = path.join(process.cwd(), 'data', 'recipes');
   await fs.mkdir(dataDir, { recursive: true });
-  const fileContent = matter.stringify(description || '', {
+  
+  let markdownBody = description || '';
+  if (ingredients && ingredients.length > 0) {
+    markdownBody += '\n\n## Ingredients\n\n';
+    ingredients.forEach((ing: any) => {
+      markdownBody += `- **${ing.proportion}** ${ing.item}\n`;
+    });
+  }
+  if (steps && steps.length > 0) {
+    markdownBody += '\n\n## Instructions\n\n';
+    steps.forEach((step: any, idx: number) => {
+      markdownBody += `${idx + 1}. ${step}\n`;
+    });
+  }
+
+  const fileContent = matter.stringify(markdownBody, {
     title, category, prepTime, cookTime, yieldVal, imageUrl: finalImageUrl, miseEnPlace: finalMiseEnPlace, ingredients, steps,
   });
   const filename = safeSlug ? `${safeSlug}.md` : `${safeTitle}.md`;

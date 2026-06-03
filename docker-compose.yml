@@ -13,6 +13,8 @@ services:
     volumes:
       - ./data:/app/data
       - ./backups:/app/backups
+      - ./public/images:/app/public/images
+      - ./public/images:/app/dist/client/images
     restart: unless-stopped
 
   # ── Development (hot-reload) ───────────────────────────────────────────────
