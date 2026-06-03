@@ -86,3 +86,58 @@ export async function POST({ request }: { request: Request }) {
     });
   }
 }
+
+export async function DELETE({ request }: { request: Request }) {
+  try {
+    const { slug, id } = await request.json();
+    const safeSlug = sanitiseSlug(slug ?? '');
+    
+    if (!safeSlug || !id) {
+      return new Response(JSON.stringify({ error: 'Invalid slug or id' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const diaryDir = path.join(process.cwd(), 'data', 'diary');
+    const diaryFilePath = path.join(diaryDir, `${safeSlug}.json`);
+    
+    let entries = [];
+    try {
+      const existingData = await fs.readFile(diaryFilePath, 'utf-8');
+      entries = JSON.parse(existingData);
+    } catch {
+      return new Response(JSON.stringify({ error: 'Diary not found' }), { status: 404 });
+    }
+
+    const entryIndex = entries.findIndex((e: any) => e.id === id);
+    if (entryIndex === -1) {
+      return new Response(JSON.stringify({ error: 'Entry not found' }), { status: 404 });
+    }
+
+    const entry = entries[entryIndex];
+    entries.splice(entryIndex, 1);
+
+    await fs.writeFile(diaryFilePath, JSON.stringify(entries, null, 2));
+
+    if (entry.imagePath && entry.imagePath.startsWith('/images/diary/images/')) {
+      const filename = entry.imagePath.replace('/images/diary/images/', '');
+      const imagePathOnDisk = path.join(process.cwd(), 'data', 'diary', 'images', filename);
+      try {
+        await fs.unlink(imagePathOnDisk);
+      } catch (e) {
+        // Ignore if already deleted
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message || 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
