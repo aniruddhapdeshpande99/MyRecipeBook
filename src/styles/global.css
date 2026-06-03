@@ -1688,3 +1688,19 @@ html.dark .contact-section__title { color: var(--color-dark-text); }
   .gallery-next-btn { right: 1rem; }
   .gallery-close-btn { top: 1rem; right: 1rem; }
 }
+
+/* PWA-exclusive scrolling strategy */
+@media (display-mode: standalone) {
+  html, body, .pwa-scroll-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  .pwa-scroll-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
