@@ -75,16 +75,25 @@ const { title, description = "A personal collection of recipes, crafted for cook
         if (!toggle) return;
 
         toggle.addEventListener('click', () => {
-          const isDark = document.documentElement.classList.contains('dark');
-          if (isDark) {
-            document.documentElement.classList.remove('dark');
-            document.documentElement.classList.add('light');
-            localStorage.setItem('theme', 'light');
-          } else {
-            document.documentElement.classList.remove('light');
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
+          const switchTheme = () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            if (isDark) {
+              document.documentElement.classList.remove('dark');
+              document.documentElement.classList.add('light');
+              localStorage.setItem('theme', 'light');
+            } else {
+              document.documentElement.classList.remove('light');
+              document.documentElement.classList.add('dark');
+              localStorage.setItem('theme', 'dark');
+            }
+          };
+
+          // Use the sleek, native View Transitions API for a cinematic crossfade if supported
+          if (!document.startViewTransition) {
+            switchTheme();
+            return;
           }
+          document.startViewTransition(switchTheme);
         });
       });
     </script>
