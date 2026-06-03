@@ -142,7 +142,7 @@ export async function POST({ request }: { request: Request }) {
     if (match) {
       const mimeType = match[1];
       const base64Data = match[2];
-      const extension = mimeType === 'image/png' ? 'png' : 'jpg';
+      const extension = mimeType.split('/')[1] || 'jpg';
       const imageFilename = `${recipeSlug}.${extension}`;
       const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', imageFilename);
       
@@ -162,7 +162,8 @@ export async function POST({ request }: { request: Request }) {
       if (img && img.startsWith('data:image/')) {
         const match = img.match(/^data:(image\/\w+);base64,(.+)$/);
         if (match) {
-          const extension = match[1] === 'image/png' ? 'png' : 'jpg';
+          const mimeType = match[1];
+          const extension = mimeType.split('/')[1] || 'jpg';
           const filename = `${recipeSlug}-mise-${Date.now()}-${i}.${extension}`;
           const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', 'miseenplace', filename);
           
