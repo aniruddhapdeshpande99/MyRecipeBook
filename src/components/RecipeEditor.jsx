@@ -15,7 +15,9 @@ export default function RecipeEditor({ existingSlug }) {
   const [ingredients, setIngredients] = useState([{ id: uuid(), item: '', proportion: '' }]);
   const [steps, setSteps] = useState([{ id: uuid(), val: '' }]);
   const [imageUrl, setImageUrl] = useState('');
+  const [miseEnPlaceImages, setMiseEnPlaceImages] = useState([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isMiseDragActive, setIsMiseDragActive] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(!!existingSlug);
   const [saveMessage, setSaveMessage] = useState('');
@@ -32,6 +34,7 @@ export default function RecipeEditor({ existingSlug }) {
         setCategory(data.category || '');
         setDescription(data.description || '');
         setImageUrl(data.imageUrl || '');
+        setMiseEnPlaceImages(data.miseEnPlace || []);
         setPrepTime(data.prepTime === 'N/A' ? '' : (data.prepTime || ''));
         setCookTime(data.cookTime === 'N/A' ? '' : (data.cookTime || ''));
         setYieldVal(data.yieldVal === 'N/A' ? '' : (data.yieldVal || ''));
@@ -101,6 +104,61 @@ export default function RecipeEditor({ existingSlug }) {
     }
   };
 
+  const handleMiseDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsMiseDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsMiseDragActive(false);
+    }
+  };
+
+  const processMiseEnPlaceFiles = (files) => {
+    const newImages = [];
+    let processed = 0;
+    
+    Array.from(files).forEach(file => {
+      if (!file || !file.type.startsWith('image/')) {
+        processed++;
+        if (processed === files.length && newImages.length > 0) {
+          setMiseEnPlaceImages(prev => [...prev, ...newImages]);
+        }
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        newImages.push(reader.result);
+        processed++;
+        if (processed === files.length) {
+          setMiseEnPlaceImages(prev => [...prev, ...newImages]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleMiseDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMiseDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processMiseEnPlaceFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleMiseFileChange = (e) => {
+    e.preventDefault();
+    if (e.target.files && e.target.files.length > 0) {
+      processMiseEnPlaceFiles(e.target.files);
+    }
+  };
+
+  const removeMiseEnPlaceImage = (index) => {
+    setMiseEnPlaceImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
@@ -120,6 +178,7 @@ export default function RecipeEditor({ existingSlug }) {
           category,
           description,
           imageUrl,
+          miseEnPlace: miseEnPlaceImages,
           prepTime,
           cookTime,
           yieldVal,
@@ -284,6 +343,117 @@ export default function RecipeEditor({ existingSlug }) {
             />
           </div>
         )}
+      </div>
+
+      <div className="form-group">
+        <label>Mise En Place Images</label>
+        {miseEnPlaceImages.length > 0 && (
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            {miseEnPlaceImages.map((imgUrl, idx) => (
+              <div key={idx} style={{
+                position: 'relative',
+                borderRadius: '8px',
+                border: '2px solid var(--color-border)',
+                overflow: 'hidden',
+                backgroundColor: 'var(--color-cream-surface)',
+                width: '120px',
+                height: '120px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <img 
+                  src={imgUrl} 
+                  alt={`Mise en place ${idx + 1}`} 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); removeMiseEnPlaceImage(idx); }}
+                  style={{
+                    position: 'absolute',
+                    top: '4px',
+                    right: '4px',
+                    backgroundColor: 'var(--color-terracotta)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    fontSize: '12px'
+                  }}
+                  title="Remove image"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <div
+          onDragEnter={handleMiseDrag}
+          onDragOver={handleMiseDrag}
+          onDragLeave={handleMiseDrag}
+          onDrop={handleMiseDrop}
+          className={`file-upload-zone ${isMiseDragActive ? 'drag-active' : ''}`}
+          style={{
+            border: '2px dashed var(--color-border)',
+            borderRadius: '8px',
+            padding: '1.5rem',
+            textAlign: 'center',
+            backgroundColor: isMiseDragActive ? 'rgba(62, 86, 67, 0.05)' : 'transparent',
+            borderColor: isMiseDragActive ? 'var(--color-sage)' : 'var(--color-border)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '120px'
+          }}
+          onClick={() => document.getElementById('mise-image-input').click()}
+        >
+          <svg 
+            width="32" 
+            height="32" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="var(--color-sage)" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+            style={{ marginBottom: '0.75rem', opacity: 0.8 }}
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <p style={{ margin: '0 0 0.5rem 0', fontWeight: '500', color: 'var(--color-sage)', fontSize: '0.95rem' }}>
+            Add Mise En Place images
+          </p>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-muted)' }}>
+            Drop images here or click to browse (multiple allowed)
+          </p>
+          <input
+            id="mise-image-input"
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleMiseFileChange}
+            style={{ display: 'none' }}
+          />
+        </div>
       </div>
 
       <div className="form-group">

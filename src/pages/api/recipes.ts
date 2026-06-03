@@ -128,7 +128,7 @@ export async function GET({ request }: { request: Request }) {
 
 export async function POST({ request }: { request: Request }) {
   const data = await request.json();
-  const { slug, title, category, ingredients, steps, description, imageUrl, prepTime, cookTime, yieldVal } = data;
+  const { slug, title, category, ingredients, steps, description, imageUrl, miseEnPlace, prepTime, cookTime, yieldVal } = data;
   const safeSlug = slug ? sanitiseSlug(slug) : '';
   const safeTitle = title
     ? title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
@@ -146,10 +146,7 @@ export async function POST({ request }: { request: Request }) {
       const imageFilename = `${recipeSlug}.${extension}`;
       const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', imageFilename);
       
-      // Ensure directory exists
       await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
-      
-      // Save decoded buffer
       const buffer = Buffer.from(base64Data, 'base64');
       await fs.writeFile(imagePathOnDisk, buffer);
       
@@ -157,10 +154,35 @@ export async function POST({ request }: { request: Request }) {
     }
   }
 
+  // Process miseEnPlace images
+  const finalMiseEnPlace = [];
+  if (Array.isArray(miseEnPlace)) {
+    for (let i = 0; i < miseEnPlace.length; i++) {
+      const img = miseEnPlace[i];
+      if (img && img.startsWith('data:image/')) {
+        const match = img.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (match) {
+          const extension = match[1] === 'image/png' ? 'png' : 'jpg';
+          const filename = `${recipeSlug}-mise-${Date.now()}-${i}.${extension}`;
+          const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', 'miseenplace', filename);
+          
+          await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
+          const buffer = Buffer.from(match[2], 'base64');
+          await fs.writeFile(imagePathOnDisk, buffer);
+          
+          finalMiseEnPlace.push(`/images/miseenplace/${filename}`);
+        }
+      } else if (img) {
+        // It's already a URL
+        finalMiseEnPlace.push(img);
+      }
+    }
+  }
+
   const dataDir = path.join(process.cwd(), 'data', 'recipes');
   await fs.mkdir(dataDir, { recursive: true });
   const fileContent = matter.stringify(description || '', {
-    title, category, prepTime, cookTime, yieldVal, imageUrl: finalImageUrl, ingredients, steps,
+    title, category, prepTime, cookTime, yieldVal, imageUrl: finalImageUrl, miseEnPlace: finalMiseEnPlace, ingredients, steps,
   });
   const filename = safeSlug ? `${safeSlug}.md` : `${safeTitle}.md`;
   await fs.writeFile(path.join(dataDir, filename), fileContent);
