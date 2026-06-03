@@ -7,6 +7,7 @@ import fsPromises from 'node:fs/promises';
 import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
+import matter from 'gray-matter';
 
 const { slug } = Astro.params;
 
@@ -28,7 +29,33 @@ try {
 }
 
 const recipe: any = parseRecipe(filePath, rawContent);
-const htmlContent = marked.parse(recipe.content || rawContent);
+
+// Parse frontmatter directly to get structured ingredients/steps
+const { data: frontmatter, content: mdBody } = matter(rawContent);
+
+// If the recipe uses structured YAML frontmatter (new format), synthesize
+// the markdown sections the JS column-builder expects.
+let contentForRender = mdBody.trim();
+
+if (Array.isArray(frontmatter.ingredients) && frontmatter.ingredients.length > 0) {
+  const ingredientLines = frontmatter.ingredients
+    .map((ing: any) => {
+      if (typeof ing === 'string') return `- ${ing}`;
+      const proportion = ing.proportion ? `**${ing.proportion}** — ` : '';
+      return `- ${proportion}${ing.item || ''}`;
+    })
+    .join('\n');
+  contentForRender += `\n\n## Ingredients\n${ingredientLines}`;
+}
+
+if (Array.isArray(frontmatter.steps) && frontmatter.steps.length > 0) {
+  const stepLines = frontmatter.steps
+    .map((step: any, i: number) => `${i + 1}. ${String(step).trim()}`)
+    .join('\n');
+  contentForRender += `\n\n## Instructions\n${stepLines}`;
+}
+
+const htmlContent = marked.parse(contentForRender || rawContent);
 
 const imageBasename = safeSlug;
 const publicImagePath = path.join(process.cwd(), 'public', 'images', `${imageBasename}.jpg`);
