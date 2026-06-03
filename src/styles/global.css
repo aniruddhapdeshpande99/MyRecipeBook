@@ -17,14 +17,14 @@
   --color-terracotta-lt: #C9664E;   /* Lighter rust for dark mode */
 
   /* — Light mode — */
-  --color-bg:            #F9F6F0;   /* Very warm light cream bg */
-  --color-surface:       #FFFFFF;   /* Pure white card surfaces */
-  --color-surface-alt:   #F3EFE9;   /* Subtle alternative surface */
+  --color-bg:            #F5EFE6;   /* Richer warm cream bg */
+  --color-surface:       #FCFAF5;   /* Very soft cream instead of pure white */
+  --color-surface-alt:   #F0E8DD;   /* Noticeable subtle alt surface */
   --color-border:        #D9C3A5;   /* Beige/Cream for borders */
-  --color-ink:           #4A4A3F;   /* Dark Olive/Brown for headings */
-  --color-ink-soft:      #5B5B4E;   /* Dark charcoal for body text */
-  --color-muted:         #8A8A7A;   /* Medium grey/olive for secondary text */
-  --color-placeholder:   #B5B5A6;   /* Light grey for placeholders */
+  --color-ink:           #6B4F3A;   /* Dark Brown for headings */
+  --color-ink-soft:      #4A4A3F;   /* Dark Olive/Brown for body text */
+  --color-muted:         #A67C52;   /* Light Brown/Tan for secondary text */
+  --color-placeholder:   #D9C3A5;   /* Beige/Cream for placeholders */
 
   /* — Dark mode — */
   --color-dark-bg:       #1E1A17;   /* True dark warm background */
@@ -62,14 +62,14 @@
   --color-terracotta-lt:    #C9664E;
 
   /* Light mode */
-  --color-bg:               #F9F6F0;
-  --color-surface:          #FFFFFF;
-  --color-surface-alt:      #F3EFE9;
+  --color-bg:               #F5EFE6;
+  --color-surface:          #FCFAF5;
+  --color-surface-alt:      #F0E8DD;
   --color-border:           #D9C3A5;
-  --color-ink:              #4A4A3F;
-  --color-ink-soft:         #5B5B4E;
-  --color-muted:            #8A8A7A;
-  --color-placeholder:      #B5B5A6;
+  --color-ink:              #6B4F3A;
+  --color-ink-soft:         #4A4A3F;
+  --color-muted:            #A67C52;
+  --color-placeholder:      #D9C3A5;
 
   /* Shared aliases */
   --color-cream:            #F9F6F0;
