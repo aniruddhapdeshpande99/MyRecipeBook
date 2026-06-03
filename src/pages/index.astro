@@ -236,7 +236,17 @@ sortedCategories.forEach((category) => {
       if (noResults) noResults.style.display = totalVisible === 0 ? 'block' : 'none';
     }
 
-    if (searchBar) searchBar.addEventListener('input', applyFilters);
+    if (searchBar) {
+      searchBar.addEventListener('input', applyFilters);
+      searchBar.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          searchBar.blur();
+          const list = document.getElementById('recipe-list');
+          if (list) list.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
     if (categoryFilter) categoryFilter.addEventListener('change', applyFilters);
     if (filterClear) {
       filterClear.addEventListener('click', () => {
