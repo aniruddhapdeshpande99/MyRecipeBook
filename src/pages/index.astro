@@ -171,13 +171,24 @@ sortedCategories.forEach((category) => {
       const heroOverlay = document.querySelector('.hero-banner__overlay');
       const mainContent = document.querySelector('main');
       
+      let fadeDistance = window.innerHeight * 0.65; // pixels to scroll before fully transitioned
+      
+      window.addEventListener('resize', () => {
+        fadeDistance = window.innerHeight * 0.65;
+      }, { passive: true });
+
       function updateFades() {
-        const fadeDistance = window.innerHeight * 0.65; // pixels to scroll before fully transitioned
         const scrollY = window.scrollY;
         const progress = Math.min(scrollY / fadeDistance, 1);
         
         // Hero fades out
-        const heroOpacity = Math.max(1 - (progress * 1.5), 0);
+        let heroOpacity = Math.max(1 - (progress * 1.5), 0);
+        
+        // Prevent fading while typing so the search bar doesn't disappear due to iOS keyboard scroll
+        if (document.activeElement && document.activeElement.id === 'search-bar') {
+          heroOpacity = 1;
+        }
+        
         if (heroContent) heroContent.style.opacity = heroOpacity.toString();
         if (heroBg) heroBg.style.opacity = heroOpacity.toString();
         if (heroOverlay) (heroOverlay as HTMLElement).style.opacity = heroOpacity.toString();
