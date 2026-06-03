@@ -58,6 +58,11 @@ export default function RecipeEditor({ existingSlug }) {
   const removeStep = (id) => setSteps(steps.filter(s => s.id !== id));
   const updateStep = (id, val) => setSteps(steps.map(s => s.id === id ? { ...s, val } : s));
 
+  const autoResize = (e) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = e.target.scrollHeight + 'px';
+  };
+
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -287,6 +292,9 @@ export default function RecipeEditor({ existingSlug }) {
           required
           value={description}
           onChange={e => setDescription(e.target.value)}
+          onInput={autoResize}
+          ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+          style={{ overflow: 'hidden', minHeight: '100px' }}
           placeholder="A rich, creamy..."
         />
       </div>
@@ -354,6 +362,9 @@ export default function RecipeEditor({ existingSlug }) {
               placeholder="Instruction step..."
               value={step.val}
               onChange={e => updateStep(step.id, e.target.value)}
+              onInput={autoResize}
+              ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+              style={{ overflow: 'hidden', minHeight: '60px' }}
               required
             />
             <button type="button" className="remove-btn" onClick={() => removeStep(step.id)}>✕</button>

@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
 import { sanitiseSlug } from '../../utils/slugUtils';
+import { parseRecipe } from '../../utils/recipeParser';
 
 export async function GET({ request }: { request: Request }) {
   const dataDir = path.join(process.cwd(), 'data', 'recipes');
@@ -23,6 +24,8 @@ export async function GET({ request }: { request: Request }) {
     try {
       const raw = await fs.readFile(filePath, 'utf-8');
       const parsed = matter(raw);
+      const parsedRecipe = parseRecipe(filePath, raw);
+      
       let ingredients = parsed.data.ingredients;
       let steps = parsed.data.steps;
 
@@ -53,20 +56,42 @@ export async function GET({ request }: { request: Request }) {
           }
 
           if (inIngredients && (t.startsWith('- ') || t.startsWith('* '))) {
-            ingredients.push({ item: t.replace(/^[-*]\s*/, '').trim(), proportion: '' });
+            let itemStr = t.replace(/^[-*]\s*/, '').trim();
+            const proportionMatch = itemStr.match(/^\*\*(.+?)\*\*\s*(.*)$/);
+            if (proportionMatch) {
+              ingredients.push({ proportion: proportionMatch[1].trim(), item: proportionMatch[2].trim() });
+            } else {
+              ingredients.push({ item: itemStr, proportion: '' });
+            }
           }
           if (inSteps && /^\d+\.\s+/.test(t)) {
             steps.push(t.replace(/^\d+\.\s*/, '').trim());
+          } else if (inSteps && (t.startsWith('- ') || t.startsWith('* '))) {
+            steps.push(t.replace(/^[-*]\s*/, '').trim());
           }
+        }
+      }
+
+      // Check for image existence if not in frontmatter
+      let imageUrl = parsed.data.imageUrl || parsedRecipe.imageUrl || '';
+      if (!imageUrl) {
+        try {
+          const publicImagePath = path.join(process.cwd(), 'public', 'images', `${safeSlug}.jpg`);
+          await fs.access(publicImagePath);
+          imageUrl = `/images/${safeSlug}.jpg`;
+        } catch {
+          // File doesn't exist
         }
       }
 
       return new Response(
         JSON.stringify({ 
-          slug: safeSlug, 
+          ...parsedRecipe,
           ...parsed.data, 
+          slug: safeSlug, 
           ingredients,
           steps,
+          imageUrl,
           content: parsed.content 
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
