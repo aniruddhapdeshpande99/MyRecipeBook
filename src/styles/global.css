@@ -50,7 +50,10 @@
 /* ============================================================
    BASE RESET
    ============================================================ */
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after { 
+  box-sizing: border-box; 
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, fill 0.35s ease, stroke 0.35s ease;
+}
 
 /* Explicit :root declarations — ensures vars work regardless of Tailwind @theme resolution */
 :root {
