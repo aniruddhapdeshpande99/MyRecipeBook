@@ -213,7 +213,7 @@ export async function POST({ request }: { request: Request }) {
   });
   
   const mdFilename = `${recipeSlug}.md`;
-  await fs.writeFile(path.join(recipeDir, mdFilename), fileContent);
+  await fs.writeFile(path.join(process.cwd(), 'data', 'recipes', mdFilename), fileContent);
   
   return new Response(
     JSON.stringify({ success: true, slug: recipeSlug }),
