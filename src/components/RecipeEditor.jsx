@@ -549,9 +549,18 @@ export default function RecipeEditor({ existingSlug }) {
         </div>
       )}
 
-      <button type="submit" className="save-btn" disabled={isSaving}>
-        {isSaving ? 'Saving...' : (existingSlug ? 'Update Recipe' : 'Save Recipe')}
-      </button>
+      <div style={{ display: 'flex', gap: '1rem' }}>
+        <button type="button" className="cancel-btn" onClick={() => {
+          if (window.confirm("Are you sure you want to discard your changes? Any unsaved edits will be lost.")) {
+            window.location.href = existingSlug ? `/recipes/${existingSlug}` : '/';
+          }
+        }} disabled={isSaving}>
+          Cancel
+        </button>
+        <button type="submit" className="save-btn" disabled={isSaving}>
+          {isSaving ? 'Saving...' : (existingSlug ? 'Update Recipe' : 'Save Recipe')}
+        </button>
+      </div>
     </form>
   );
 }
