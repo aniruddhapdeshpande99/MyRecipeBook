@@ -303,18 +303,14 @@ html.dark .theme-toggle-btn .moon-icon { display: none; }
 .hero-banner {
   position: relative;
   width: 100%;
-  height: 340px;
+  height: 60vh;
+  min-height: 400px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   text-align: center;
-  transition: height 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.hero-banner.is-expanded {
-  height: calc(100vh - 65px);
 }
 
 .hero-banner__img {
@@ -361,8 +357,18 @@ html.dark .theme-toggle-btn .moon-icon { display: none; }
 }
 
 @media (max-width: 600px) {
-  .hero-banner { height: 240px; }
-  .hero-banner.is-expanded { height: calc(100vh - 65px); }
+  .hero-banner { height: 340px; min-height: unset; }
+}
+
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  will-change: opacity, transform;
+}
+.fade-in-section.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ============================================================
