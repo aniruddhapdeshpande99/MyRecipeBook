@@ -38,16 +38,16 @@ export async function POST({ request }: { request: Request }) {
     // Unique filename: <slug>-<timestamp>.<ext>
     const timestamp = Date.now();
     const filename = `${safeSlug}-${timestamp}.${extension}`;
-    const imagePathOnDisk = path.join(process.cwd(), 'public', 'images', 'diary', filename);
+    const imagePathOnDisk = path.join(process.cwd(), 'data', 'diary', 'images', filename);
 
-    // Ensure public/images/diary directory exists
+    // Ensure data/diary/images directory exists
     await fs.mkdir(path.dirname(imagePathOnDisk), { recursive: true });
 
     // Save decoded buffer
     const buffer = Buffer.from(base64Data, 'base64');
     await fs.writeFile(imagePathOnDisk, buffer);
 
-    const relativeImagePath = `/images/diary/${filename}`;
+    const relativeImagePath = `/images/diary/images/${filename}`;
 
     // Read or initialize the diary file: data/diary/<slug>.json
     const diaryDir = path.join(process.cwd(), 'data', 'diary');

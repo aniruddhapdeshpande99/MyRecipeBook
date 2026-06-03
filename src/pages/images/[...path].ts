@@ -10,7 +10,14 @@ export async function GET({ params }: { params: { path: string } }) {
   // Prevent directory traversal
   const safePath = path.normalize(imagePath).replace(/^(\.\.(\/|\\|$))+/, '');
   
-  const fullPath = path.join(process.cwd(), 'data', 'recipes', safePath);
+  let fullPath = '';
+  if (safePath.startsWith('diary/')) {
+    // Diary images are saved directly inside data/diary/images/...
+    // Note: safePath includes 'diary/' prefix, e.g. 'diary/images/file.jpg'
+    fullPath = path.join(process.cwd(), 'data', safePath);
+  } else {
+    fullPath = path.join(process.cwd(), 'data', 'recipes', safePath);
+  }
 
   try {
     const data = await fs.readFile(fullPath);
