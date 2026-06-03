@@ -164,6 +164,44 @@ sortedCategories.forEach((category) => {
     const categorySections = document.querySelectorAll('.category-section');
     const noResults = document.getElementById('no-results') as HTMLDivElement;
 
+    // PWA-Safe Download Interceptor
+    document.querySelectorAll('.recipe-card__download').forEach(link => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const href = link.getAttribute('href');
+        if (!href) return;
+        
+        const slugMatch = href.match(/slug=([^&]+)/);
+        const slug = slugMatch ? slugMatch[1] : 'recipe';
+        const filename = `${slug}.md`;
+        
+        try {
+          const res = await fetch(href);
+          if (!res.ok) throw new Error('Network response was not ok');
+          const blob = await res.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          
+          // Cleanup
+          setTimeout(() => {
+            window.URL.revokeObjectURL(blobUrl);
+            a.remove();
+          }, 100);
+        } catch (error) {
+          console.error('Download failed, falling back to direct navigation:', error);
+          window.location.href = href;
+        }
+      });
+    });
+
     // Scroll-Linked Crossfade Animation
     document.addEventListener('DOMContentLoaded', () => {
       const heroContent = document.getElementById('hero-content');
