@@ -4,7 +4,7 @@ This diagram details the React state management within `src/components/RecipeEdi
 
 ```mermaid
 flowchart TD
-    subgraph UUID Generation
+    subgraph UUIDGen [UUID Generation]
         A[Need Unique ID for List Item] --> B{typeof crypto !== 'undefined' && crypto.randomUUID?}
         B -- Yes (Modern) --> C[crypto.randomUUID]
         B -- No (iOS Safari < 15.4) --> D[Math.random + Date.now fallback]
@@ -20,7 +20,7 @@ flowchart TD
     end
 
     subgraph User Interactions
-        UI1[Add Ingredient] --> |Calls| UUID Generation
+        UI1[Add Ingredient] --> |Calls| UUIDGen
         UI1 --> |Appends| S2
         
         UI2[Image Drag & Drop] --> |Triggers| FileReader
