@@ -46,7 +46,7 @@ sortedCategories.forEach((category) => {
   <!-- Hero Banner -->
   <div class="hero-banner">
     <img
-      src="/images/hero-banner.jpg"
+      src="/images/hero-banner-hd.png"
       alt="A warm, cozy kitchen with sage green cabinets"
       class="hero-banner__img"
       id="hero-bg"
@@ -171,9 +171,8 @@ sortedCategories.forEach((category) => {
       const heroOverlay = document.querySelector('.hero-banner__overlay');
       const mainContent = document.querySelector('main');
       
-      const fadeDistance = 400; // pixels to scroll before fully transitioned
-
       function updateFades() {
+        const fadeDistance = window.innerHeight * 0.65; // pixels to scroll before fully transitioned
         const scrollY = window.scrollY;
         const progress = Math.min(scrollY / fadeDistance, 1);
         

@@ -303,7 +303,7 @@ html.dark .theme-toggle-btn .moon-icon { display: none; }
 .hero-banner {
   position: relative;
   width: 100%;
-  height: 60vh;
+  height: calc(100vh - 65px);
   min-height: 400px;
   overflow: hidden;
   display: flex;
@@ -357,7 +357,7 @@ html.dark .theme-toggle-btn .moon-icon { display: none; }
 }
 
 @media (max-width: 600px) {
-  .hero-banner { height: 340px; min-height: unset; }
+  .hero-banner { height: calc(100vh - 65px); min-height: unset; }
 }
 
 
