@@ -311,7 +311,7 @@ try {
           }
         }
 
-        if (tag === 'H2') {
+        if (tag === 'H2' || tag === 'H1') {
           if (text.includes('ingredient')) { currentTarget = ingredientsCol; inNotes = false; return; }
           if (text.includes('step') || text.includes('instruction') || text.includes('method')) { currentTarget = instructionsCol; inNotes = false; return; }
           if (text.includes('note') || text.includes('tip') || text.includes('origin') || text.includes('based on')) {
