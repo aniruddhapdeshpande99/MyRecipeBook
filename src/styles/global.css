@@ -7,37 +7,37 @@
    Dark:  True dark slate, high-contrast cream text, sage accents
    ============================================================ */
 @theme {
-  /* — Accent palette — */
-  --color-sage:          #3E6B4A;   /* Forest sage — main accent */
+  /* — Accent palette (Rustic Cafe with Logo Green) — */
+  --color-sage:          #3E6B4A;   /* Forest Sage from logo */
   --color-sage-dark:     #2C5237;   /* Darker sage for hover */
-  --color-sage-light:    #7AB88A;   /* Lighter sage for dark mode accents */
-  --color-sage-mist:     rgba(62,107,74,0.09);
+  --color-sage-light:    #A67C52;   /* Light Brown/Tan */
+  --color-sage-mist:     rgba(62, 107, 74, 0.09);
 
-  --color-terracotta:    #A04020;   /* Rich terracotta for step numbers */
-  --color-terracotta-lt: #E07850;   /* Lighter for dark mode */
+  --color-terracotta:    #B5523B;   /* Rust Red */
+  --color-terracotta-lt: #C9664E;   /* Lighter rust for dark mode */
 
   /* — Light mode — */
-  --color-bg:            #FAFAF7;   /* Near-white warm background */
+  --color-bg:            #F9F6F0;   /* Very warm light cream bg */
   --color-surface:       #FFFFFF;   /* Pure white card surfaces */
-  --color-surface-alt:   #F2F0EB;   /* Subtle alternative surface */
-  --color-border:        #E0DAD0;   /* Visible warm border */
-  --color-ink:           #111111;   /* Near-black for headings */
-  --color-ink-soft:      #2C2C2C;   /* Dark charcoal for body text */
-  --color-muted:         #5A5A5A;   /* Medium grey for secondary text */
-  --color-placeholder:   #9A9A9A;   /* Light grey for placeholders */
+  --color-surface-alt:   #F3EFE9;   /* Subtle alternative surface */
+  --color-border:        #D9C3A5;   /* Beige/Cream for borders */
+  --color-ink:           #4A4A3F;   /* Dark Olive/Brown for headings */
+  --color-ink-soft:      #5B5B4E;   /* Dark charcoal for body text */
+  --color-muted:         #8A8A7A;   /* Medium grey/olive for secondary text */
+  --color-placeholder:   #B5B5A6;   /* Light grey for placeholders */
 
   /* — Dark mode — */
-  --color-dark-bg:       #141414;   /* True dark background — not brown */
-  --color-dark-surface:  #1E1E1E;   /* Card/surface background */
-  --color-dark-surface-alt: #252525; /* Slightly lighter surface */
-  --color-dark-border:   #333333;   /* Visible border in dark */
-  --color-dark-text:     #F0EDE8;   /* Warm cream — main text */
-  --color-dark-muted:    #A8A8A8;   /* Lighter grey for secondary text */
-  --color-dark-placeholder: #666666;
+  --color-dark-bg:       #1E1A17;   /* True dark warm background */
+  --color-dark-surface:  #2A2420;   /* Card/surface background */
+  --color-dark-surface-alt: #362F2A; /* Slightly lighter surface */
+  --color-dark-border:   #4A4A3F;   /* Dark Olive/Brown as dark border */
+  --color-dark-text:     #D9C3A5;   /* Beige/Cream — main text */
+  --color-dark-muted:    #A67C52;   /* Light Brown/Tan for secondary text */
+  --color-dark-placeholder: #6B4F3A;
 
   /* Semantic aliases used throughout the stylesheet */
-  --color-cream:         #F0EDE8;   /* Used for text on dark backgrounds */
-  --color-cream-dark:    #E0DAD0;   /* Alias for border */
+  --color-cream:         #F9F6F0;   /* Used for text on dark backgrounds */
+  --color-cream-dark:    #D9C3A5;   /* Alias for border */
   --color-cream-surface: #FFFFFF;   /* Alias for light surface */
 
   --font-serif: 'Lora', Georgia, serif;
@@ -56,24 +56,24 @@
 :root {
   --color-sage:             #3E6B4A;
   --color-sage-dark:        #2C5237;
-  --color-sage-light:       #7AB88A;
-  --color-sage-mist:        rgba(62,107,74,0.09);
-  --color-terracotta:       #A04020;
-  --color-terracotta-lt:    #E07850;
+  --color-sage-light:       #A67C52;
+  --color-sage-mist:        rgba(62, 107, 74, 0.09);
+  --color-terracotta:       #B5523B;
+  --color-terracotta-lt:    #C9664E;
 
   /* Light mode */
-  --color-bg:               #FAFAF7;
+  --color-bg:               #F9F6F0;
   --color-surface:          #FFFFFF;
-  --color-surface-alt:      #F2F0EB;
-  --color-border:           #E0DAD0;
-  --color-ink:              #111111;
-  --color-ink-soft:         #2C2C2C;
-  --color-muted:            #5A5A5A;
-  --color-placeholder:      #9A9A9A;
+  --color-surface-alt:      #F3EFE9;
+  --color-border:           #D9C3A5;
+  --color-ink:              #4A4A3F;
+  --color-ink-soft:         #5B5B4E;
+  --color-muted:            #8A8A7A;
+  --color-placeholder:      #B5B5A6;
 
   /* Shared aliases */
-  --color-cream:            #F0EDE8;
-  --color-cream-dark:       #E0DAD0;
+  --color-cream:            #F9F6F0;
+  --color-cream-dark:       #D9C3A5;
   --color-cream-surface:    #FFFFFF;
 
   --font-serif: 'Lora', Georgia, serif;
@@ -84,41 +84,41 @@
 
 /* Dark mode overrides via class (JS toggle) */
 html.dark {
-  --color-bg:               #141414;
-  --color-surface:          #1E1E1E;
-  --color-surface-alt:      #252525;
-  --color-border:           #333333;
-  --color-ink:              #F0EDE8;
-  --color-ink-soft:         #E0DDD8;
-  --color-muted:            #A8A8A8;
-  --color-placeholder:      #666666;
-  --color-cream-surface:    #1E1E1E;
-  --color-dark-bg:          #141414;
-  --color-dark-surface:     #1E1E1E;
-  --color-dark-surface-alt: #252525;
-  --color-dark-border:      #333333;
-  --color-dark-text:        #F0EDE8;
-  --color-dark-muted:       #A8A8A8;
+  --color-bg:               #1E1A17;
+  --color-surface:          #2A2420;
+  --color-surface-alt:      #362F2A;
+  --color-border:           #4A4A3F;
+  --color-ink:              #D9C3A5;
+  --color-ink-soft:         #C2AE93;
+  --color-muted:            #A67C52;
+  --color-placeholder:      #6B4F3A;
+  --color-cream-surface:    #2A2420;
+  --color-dark-bg:          #1E1A17;
+  --color-dark-surface:     #2A2420;
+  --color-dark-surface-alt: #362F2A;
+  --color-dark-border:      #4A4A3F;
+  --color-dark-text:        #D9C3A5;
+  --color-dark-muted:       #A67C52;
 }
 
 /* Dark mode overrides via OS preference */
 @media (prefers-color-scheme: dark) {
   html:not(.light) {
-    --color-bg:               #141414;
-    --color-surface:          #1E1E1E;
-    --color-surface-alt:      #252525;
-    --color-border:           #333333;
-    --color-ink:              #F0EDE8;
-    --color-ink-soft:         #E0DDD8;
-    --color-muted:            #A8A8A8;
-    --color-placeholder:      #666666;
-    --color-cream-surface:    #1E1E1E;
-    --color-dark-bg:          #141414;
-    --color-dark-surface:     #1E1E1E;
-    --color-dark-surface-alt: #252525;
-    --color-dark-border:      #333333;
-    --color-dark-text:        #F0EDE8;
-    --color-dark-muted:       #A8A8A8;
+    --color-bg:               #1E1A17;
+    --color-surface:          #2A2420;
+    --color-surface-alt:      #362F2A;
+    --color-border:           #4A4A3F;
+    --color-ink:              #D9C3A5;
+    --color-ink-soft:         #C2AE93;
+    --color-muted:            #A67C52;
+    --color-placeholder:      #6B4F3A;
+    --color-cream-surface:    #2A2420;
+    --color-dark-bg:          #1E1A17;
+    --color-dark-surface:     #2A2420;
+    --color-dark-surface-alt: #362F2A;
+    --color-dark-border:      #4A4A3F;
+    --color-dark-text:        #D9C3A5;
+    --color-dark-muted:       #A67C52;
   }
 }
 

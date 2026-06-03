@@ -23,8 +23,52 @@ export async function GET({ request }: { request: Request }) {
     try {
       const raw = await fs.readFile(filePath, 'utf-8');
       const parsed = matter(raw);
+      let ingredients = parsed.data.ingredients;
+      let steps = parsed.data.steps;
+
+      // Extract from markdown body if missing in frontmatter
+      if (!ingredients || !steps || ingredients.length === 0 || steps.length === 0) {
+        ingredients = [];
+        steps = [];
+        const lines = parsed.content.split(/\r?\n/);
+        let inIngredients = false;
+        let inSteps = false;
+
+        for (const line of lines) {
+          const t = line.trim();
+          if (/^##\s+ingredient/i.test(t)) {
+            inIngredients = true;
+            inSteps = false;
+            continue;
+          }
+          if (/^##\s+(instruction|step|method)/i.test(t)) {
+            inSteps = true;
+            inIngredients = false;
+            continue;
+          }
+          if (/^##\s+/.test(t)) {
+            inIngredients = false;
+            inSteps = false;
+            continue;
+          }
+
+          if (inIngredients && (t.startsWith('- ') || t.startsWith('* '))) {
+            ingredients.push({ item: t.replace(/^[-*]\s*/, '').trim(), proportion: '' });
+          }
+          if (inSteps && /^\d+\.\s+/.test(t)) {
+            steps.push(t.replace(/^\d+\.\s*/, '').trim());
+          }
+        }
+      }
+
       return new Response(
-        JSON.stringify({ slug: safeSlug, ...parsed.data, content: parsed.content }),
+        JSON.stringify({ 
+          slug: safeSlug, 
+          ...parsed.data, 
+          ingredients,
+          steps,
+          content: parsed.content 
+        }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     } catch {
