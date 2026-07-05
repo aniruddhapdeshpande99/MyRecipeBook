@@ -37,3 +37,109 @@ export function serializeRecipe(recipe = {}) {
 
   return matter.stringify(body ? `${body.trim()}\n` : '', data);
 }
+
+export function extractRecipe(rawContent = '') {
+  const parsed = matter(rawContent || '');
+  const data = parsed.data || {};
+  const content = parsed.content || '';
+
+  let ingredients = normalizeIngredients(data.ingredients);
+  let steps = normalizeSteps(data.steps);
+  if (ingredients.length === 0 || steps.length === 0) {
+    const fromBody = parseBodySections(content);
+    if (ingredients.length === 0) ingredients = fromBody.ingredients;
+    if (steps.length === 0) steps = fromBody.steps;
+  }
+
+  const title = data.title || deriveTitleFromBody(content) || '';
+  const description = data.description
+    ? String(data.description)
+    : extractDescription(content, title);
+
+  // Metadata: frontmatter wins; fall back to inline **Prep time:** markers in
+  // the body (legacy recipes). Preserves recipeParser's existing behavior.
+  let prepTime = data.prepTime || '';
+  let cookTime = data.cookTime || '';
+  let yieldVal = data.yieldVal || '';
+  if (!prepTime || !cookTime || !yieldVal) {
+    const prepMatch = content.match(/\*\*Prep\s+[Tt]ime:\*\*\s*(.+)$/m);
+    const cookMatch = content.match(/\*\*Cook\s+[Tt]ime:\*\*\s*(.+)$/m);
+    const yieldMatch = content.match(/\*\*Yield:\*\*\s*(.+)$/m);
+    if (!prepTime && prepMatch) prepTime = prepMatch[1].replace(/<br\s*\/?>/gi, '').trim();
+    if (!cookTime && cookMatch) cookTime = cookMatch[1].replace(/<br\s*\/?>/gi, '').trim();
+    if (!yieldVal && yieldMatch) yieldVal = yieldMatch[1].replace(/<br\s*\/?>/gi, '').trim();
+  }
+
+  return {
+    title,
+    category: data.category || '',
+    description,
+    prepTime,
+    cookTime,
+    yieldVal,
+    imageUrl: data.imageUrl || '',
+    miseEnPlace: Array.isArray(data.miseEnPlace) ? data.miseEnPlace : [],
+    ingredients,
+    steps,
+    content,
+  };
+}
+
+function normalizeIngredients(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map(ing => typeof ing === 'string'
+      ? { item: ing.trim(), proportion: '' }
+      : { item: String(ing.item || '').trim(), proportion: String(ing.proportion || '').trim() })
+    .filter(i => i.item || i.proportion);
+}
+
+function normalizeSteps(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(s => String(typeof s === 'string' ? s : String(s)).trim()).filter(Boolean);
+}
+
+function deriveTitleFromBody(content) {
+  const m = content.match(/^#\s+(.+)$/m);
+  return m ? m[1].trim() : '';
+}
+
+function parseBodySections(content) {
+  const ingredients = [];
+  const steps = [];
+  let inIngredients = false, inSteps = false;
+  for (const line of content.split(/\r?\n/)) {
+    const t = line.trim();
+    if (/^#{1,2}\s+ingredient/i.test(t)) { inIngredients = true; inSteps = false; continue; }
+    if (/^#{1,2}\s+(instruction|step|method)/i.test(t)) { inSteps = true; inIngredients = false; continue; }
+    if (/^#{1,2}\s+/.test(t)) { inIngredients = false; inSteps = false; continue; }
+    if (inIngredients && (t.startsWith('- ') || t.startsWith('* '))) {
+      const itemStr = t.replace(/^[-*]\s*/, '').trim();
+      const m = itemStr.match(/^\*\*(.+?)\*\*\s*(.*)$/);
+      if (m) ingredients.push({ proportion: m[1].trim(), item: m[2].trim() });
+      else ingredients.push({ item: itemStr, proportion: '' });
+    } else if (inSteps && /^\d+\.\s+/.test(t)) {
+      steps.push(t.replace(/^\d+\.\s*/, '').trim());
+    } else if (inSteps && (t.startsWith('- ') || t.startsWith('* '))) {
+      steps.push(t.replace(/^[-*]\s*/, '').trim());
+    }
+  }
+  return { ingredients, steps };
+}
+
+function extractDescription(content, title) {
+  let desc = '';
+  for (const raw of content.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (line === '') continue;
+    if (line.startsWith('# ')) continue;            // legacy title heading
+    if (/^#{1,2}\s+/.test(line)) break;             // reached a section heading
+    if (line.startsWith('**Prep') || line.startsWith('**Cook') || line.startsWith('**Yield')) continue;
+    if (line.startsWith('---') || line.startsWith('*') || line.startsWith('-')) continue;
+    desc = line;
+    break;
+  }
+  desc = desc.replace(/\*\*|\*|_/g, '').trim();
+  if (!desc) desc = `A delicious recipe for ${title || 'this dish'}.`;
+  return desc;
+}

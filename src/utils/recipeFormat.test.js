@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import matter from 'gray-matter';
-import { serializeRecipe } from './recipeFormat';
+import { serializeRecipe, extractRecipe } from './recipeFormat';
 
 describe('serializeRecipe', () => {
   it('writes content to the body and keeps only metadata in frontmatter', () => {
@@ -40,5 +40,97 @@ describe('serializeRecipe', () => {
     expect(content).not.toContain('## Ingredients');
     expect(content).not.toContain('## Instructions');
     expect(content.trim()).toBe('Just a note.');
+  });
+});
+
+describe('extractRecipe', () => {
+  it('reads frontmatter-array recipes (no body sections)', () => {
+    const raw = `---
+title: Bagel
+category: Fusion
+ingredients:
+  - item: Mushroom
+    proportion: 200g
+steps:
+  - Toast bagel.
+---
+`;
+    const r = extractRecipe(raw);
+    expect(r.title).toBe('Bagel');
+    expect(r.category).toBe('Fusion');
+    expect(r.ingredients).toEqual([{ item: 'Mushroom', proportion: '200g' }]);
+    expect(r.steps).toEqual(['Toast bagel.']);
+  });
+
+  it('reads ##-heading body sections and a body description (no # heading)', () => {
+    const raw = `---
+title: Rajma
+category: Punjabi
+---
+Best served with rice.
+
+## Ingredients
+
+- **2 large** Onion
+
+## Instructions
+
+1. Chop onions.
+2. Cook.
+`;
+    const r = extractRecipe(raw);
+    expect(r.description).toBe('Best served with rice.');   // Bug A: real description, not fallback
+    expect(r.ingredients).toEqual([{ proportion: '2 large', item: 'Onion' }]);
+    expect(r.steps).toEqual(['Chop onions.', 'Cook.']);
+  });
+
+  it('reads legacy single-#-heading body sections (shahi-kaju shape)', () => {
+    const raw = `---
+title: Shahi Kaju
+description: Creamy cashew curry.
+category: Mains
+---
+# Ingredients
+- 250g Paneer
+
+# Instructions
+1. Soak cashews.
+`;
+    const r = extractRecipe(raw);
+    expect(r.description).toBe('Creamy cashew curry.');       // from frontmatter
+    expect(r.ingredients).toEqual([{ item: '250g Paneer', proportion: '' }]);
+    expect(r.steps).toEqual(['Soak cashews.']);
+  });
+
+  it('deduplicates: a "both" file yields 2 steps, not 4', () => {
+    const raw = `---
+title: Dup
+steps:
+  - One.
+  - Two.
+---
+## Instructions
+
+1. One.
+2. Two.
+`;
+    const r = extractRecipe(raw);
+    expect(r.steps).toEqual(['One.', 'Two.']);   // frontmatter wins; body not double-counted
+  });
+
+  it('round-trips through serializeRecipe for a recipe with a description', () => {
+    const original = {
+      title: 'Rajma', category: 'Punjabi', description: 'Best with rice.',
+      prepTime: '30 min', cookTime: '45 min', yieldVal: '4', imageUrl: '', miseEnPlace: [],
+      ingredients: [{ item: 'Onion', proportion: '2 large' }],
+      steps: ['Chop.', 'Cook.'],
+    };
+    const back = extractRecipe(serializeRecipe(original));
+    expect(back.title).toBe('Rajma');
+    expect(back.category).toBe('Punjabi');
+    expect(back.description).toBe('Best with rice.');
+    expect(back.prepTime).toBe('30 min');
+    expect(back.ingredients).toEqual([{ proportion: '2 large', item: 'Onion' }]);
+    expect(back.steps).toEqual(['Chop.', 'Cook.']);
   });
 });
