@@ -73,4 +73,18 @@ yieldVal: "6 servings"
     const result = parseRecipe('data/recipes/some-recipe.md', '# Some Recipe');
     expect(result.category).toBe('General');
   });
+
+  it('extracts a body description when there is no leading # heading (Bug A)', () => {
+    const raw = `---
+title: Rajma
+category: Punjabi
+---
+Best served with rice.
+
+## Ingredients
+- **2 large** Onion
+`;
+    const result = parseRecipe('data/recipes/rajma.md', raw);
+    expect(result.description).toBe('Best served with rice.');
+  });
 });
