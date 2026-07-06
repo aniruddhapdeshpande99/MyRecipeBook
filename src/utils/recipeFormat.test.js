@@ -157,3 +157,52 @@ steps:
     expect(back.steps).toEqual(['Chop.', 'Cook.']);
   });
 });
+
+describe('extractRecipe description fidelity', () => {
+  it('preserves a multi-paragraph description before the first section', () => {
+    const raw = `---
+title: Rajma
+---
+First paragraph of the description.
+
+Bonus - Spiced Lemon Onion Salad
+
+## Ingredients
+
+- **2** Onion
+`;
+    const r = extractRecipe(raw);
+    expect(r.description).toBe('First paragraph of the description.\n\nBonus - Spiced Lemon Onion Salad');
+  });
+
+  it('does not strip literal * or _ from the description', () => {
+    const raw = `---
+title: X
+---
+Mom's *Famous* Chili_Verde.
+
+## Ingredients
+
+- Beans
+`;
+    expect(extractRecipe(raw).description).toBe("Mom's *Famous* Chili_Verde.");
+  });
+
+  it('reads prep/yield from a legacy ## info bullet block', () => {
+    const raw = `---
+title: Old
+---
+A classic.
+
+## info
+- 25 minutes
+- Serves 4
+
+## Ingredients
+- Flour
+`;
+    const r = extractRecipe(raw);
+    expect(r.prepTime).toBe('25 minutes');
+    expect(r.yieldVal).toBe('Serves 4');
+  });
+});

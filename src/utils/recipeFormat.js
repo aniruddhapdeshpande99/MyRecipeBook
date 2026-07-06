@@ -78,6 +78,25 @@ export function extractRecipe(rawContent = '') {
     if (!yieldVal && yieldMatch) yieldVal = yieldMatch[1].replace(/<br\s*\/?>/gi, '').trim();
   }
 
+  // Legacy "## info" bullet block: first time-like bullet → prep, next → cook,
+  // servings/yield/makes bullet → yield. (Restores old recipeParser behavior.)
+  if (!prepTime || !yieldVal) {
+    const infoMatch = content.match(/##\s+info\s*\n([\s\S]*?)(?=\n##|$)/i);
+    if (infoMatch) {
+      const infoLines = infoMatch[1].split(/\r?\n/).map(l => l.trim())
+        .filter(l => l.startsWith('*') || l.startsWith('-'));
+      for (const l of infoLines) {
+        const text = l.replace(/^[\*\-\s]+/, '').trim();
+        if (/time|minute|hour/i.test(text)) {
+          if (!prepTime) prepTime = text;
+          else if (!cookTime) cookTime = text;
+        } else if (/serve|serving|yield|makes/i.test(text)) {
+          if (!yieldVal) yieldVal = text;
+        }
+      }
+    }
+  }
+
   return {
     title,
     category: data.category || '',
@@ -136,18 +155,16 @@ function parseBodySections(content) {
 }
 
 function extractDescription(content, title) {
-  let desc = '';
+  const collected = [];
   for (const raw of content.split(/\r?\n/)) {
     const line = raw.trim();
-    if (line === '') continue;
-    if (line.startsWith('# ')) continue;            // legacy title heading
-    if (/^#{1,2}\s+/.test(line)) break;             // reached a section heading
+    if (/^##\s+/.test(line)) break;                                   // ## section heading
+    if (/^#\s+(ingredient|instruction|step|method|note|tip)/i.test(line)) break; // legacy single-# section
+    if (line.startsWith('# ')) continue;                              // legacy title heading
     if (line.startsWith('**Prep') || line.startsWith('**Cook') || line.startsWith('**Yield')) continue;
-    if (line.startsWith('---') || line.startsWith('*') || line.startsWith('-')) continue;
-    desc = line;
-    break;
+    if (line.startsWith('---')) continue;
+    collected.push(raw);
   }
-  desc = desc.replace(/\*\*|\*|_/g, '').trim();
-  if (!desc) desc = `A delicious recipe for ${title || 'this dish'}.`;
-  return desc;
+  const desc = collected.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return desc || `A delicious recipe for ${title || 'this dish'}.`;
 }
