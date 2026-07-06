@@ -2,7 +2,21 @@
 
 Date: 2026-07-05
 Source: `/code-review max` (2 independent finder passes + inline analysis) on branch `fix/recipe-canonical-format`.
-Status: The two REPORTED bugs (dropped description edits, doubled steps) are FIXED and verified live. The findings below are ADDITIONAL faults surfaced by the review, to be addressed in a later brainstorming.
+Status: The two REPORTED bugs (dropped description edits, doubled steps) are FIXED and verified live. The findings below are ADDITIONAL faults surfaced by the review.
+
+## Resolution (2026-07-05, plan `2026-07-05-recipe-format-review-fixes.md`)
+
+All findings addressed; verified live after re-migration + redeploy.
+
+- **A** (multi-paragraph description) — **Resolved** in Fix-Task 2 (`extractDescription` now captures the full pre-section block verbatim). Rajma's "Bonus - Spiced Lemon Onion Salad" paragraph was **recovered from backup** and re-migrated (Fix-Task 6).
+- **B** (`*`/`_` stripping) — **Resolved** in Fix-Task 2 (description kept verbatim; round-trip of `_under_`/`*star*` confirmed live).
+- **C** (raw-frontmatter / blank render) — **Resolved** in Fix-Task 3 (detail page renders `recipeBodyMarkdown(extractRecipe(raw))`; no YAML leak).
+- **D** (migration misses subfolders) — **Resolved** in Fix-Task 5 (recursive `migrateDir`).
+- **E** (`## info` metadata) — **Resolved** in Fix-Task 2 (fallback restored in `extractRecipe`).
+- **F** (empty category in API) — **Resolved** in Fix-Task 4 (GET single + list default to `General`).
+- **G** (dangling heading) — **Resolved** in Fix-Task 1 (`recipeBodyMarkdown` filters blank entries before emitting a heading).
+- **H** (text-only save on fresh install) — **Resolved** in Fix-Task 4 (POST `mkdir`s `data/recipes` before write).
+- **A-Notes / `###` ingredient subgroups** — **Deferred (non-goal):** round-tripping arbitrary `## Notes`/`## Tips` sections and `###` ingredient-group headings through the structured editor needs editor UI + a richer data model; no current recipe uses them.
 
 ## Theme
 
