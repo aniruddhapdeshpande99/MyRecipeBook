@@ -30,30 +30,11 @@ try {
 
 const recipe: any = parseRecipe(filePath, rawContent);
 
-// Parse frontmatter directly to get structured ingredients/steps
-const { data: frontmatter, content: mdBody } = matter(rawContent);
-
-// If the recipe uses structured YAML frontmatter (new format), synthesize
-// the markdown sections the JS column-builder expects.
-let contentForRender = mdBody.trim();
-
-if (Array.isArray(frontmatter.ingredients) && frontmatter.ingredients.length > 0) {
-  const ingredientLines = frontmatter.ingredients
-    .map((ing: any) => {
-      if (typeof ing === 'string') return `- ${ing}`;
-      const proportion = ing.proportion ? `**${ing.proportion}** — ` : '';
-      return `- ${proportion}${ing.item || ''}`;
-    })
-    .join('\n');
-  contentForRender += `\n\n## Ingredients\n${ingredientLines}`;
-}
-
-if (Array.isArray(frontmatter.steps) && frontmatter.steps.length > 0) {
-  const stepLines = frontmatter.steps
-    .map((step: any, i: number) => `${i + 1}. ${String(step).trim()}`)
-    .join('\n');
-  contentForRender += `\n\n## Instructions\n${stepLines}`;
-}
+// The markdown body is the single source of truth: it already contains the
+// description plus the ## Ingredients and ## Instructions sections. Render it
+// as-is — do NOT synthesize sections from frontmatter (that caused duplicates).
+const { content: mdBody } = matter(rawContent);
+const contentForRender = mdBody.trim();
 
 const htmlContent = marked.parse(contentForRender || rawContent);
 
