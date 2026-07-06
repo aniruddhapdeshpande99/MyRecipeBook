@@ -39,7 +39,7 @@ export async function GET({ request }: { request: Request }) {
       }
 
       return new Response(
-        JSON.stringify({ ...r, slug: safeSlug, imageUrl }),
+        JSON.stringify({ ...r, category: r.category || 'General', slug: safeSlug, imageUrl }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     } catch {
@@ -62,7 +62,7 @@ export async function GET({ request }: { request: Request }) {
   const recipes = await Promise.all(files.map(async (fp) => {
     const raw = await fs.readFile(fp, 'utf-8');
     const r = extractRecipe(raw);
-    return { slug: path.basename(fp, '.md'), ...r };
+    return { slug: path.basename(fp, '.md'), ...r, category: r.category || 'General' };
   }));
 
   return new Response(JSON.stringify(recipes), {
@@ -139,6 +139,7 @@ export async function POST({ request }: { request: Request }) {
   });
 
   const mdFilename = `${recipeSlug}.md`;
+  await fs.mkdir(path.join(process.cwd(), 'data', 'recipes'), { recursive: true });
   await fs.writeFile(path.join(process.cwd(), 'data', 'recipes', mdFilename), fileContent);
   
   return new Response(
