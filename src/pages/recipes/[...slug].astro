@@ -2,12 +2,12 @@
 // @ts-nocheck
 import Layout from '../../layouts/Layout.astro';
 import { parseRecipe } from '../../utils/recipeParser';
+import { extractRecipe, recipeBodyMarkdown } from '../../utils/recipeFormat';
 import { sanitiseSlug } from '../../utils/slugUtils';
 import fsPromises from 'node:fs/promises';
 import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
-import matter from 'gray-matter';
 
 const { slug } = Astro.params;
 
@@ -30,13 +30,11 @@ try {
 
 const recipe: any = parseRecipe(filePath, rawContent);
 
-// The markdown body is the single source of truth: it already contains the
-// description plus the ## Ingredients and ## Instructions sections. Render it
-// as-is — do NOT synthesize sections from frontmatter (that caused duplicates).
-const { content: mdBody } = matter(rawContent);
-const contentForRender = mdBody.trim();
-
-const htmlContent = marked.parse(contentForRender || rawContent);
+// Render from the canonical structured recipe, so the page is correct for ANY
+// on-disk shape (frontmatter-array, legacy #-heading, or canonical body) and
+// never leaks raw YAML. recipeBodyMarkdown emits exactly one of each section.
+const contentForRender = recipeBodyMarkdown(extractRecipe(rawContent));
+const htmlContent = marked.parse(contentForRender);
 
 const imageBasename = safeSlug;
 const publicImagePath = path.join(process.cwd(), 'public', 'images', `${imageBasename}.jpg`);
