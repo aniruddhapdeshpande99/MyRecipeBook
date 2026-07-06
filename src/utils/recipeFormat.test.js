@@ -1,6 +1,29 @@
 import { describe, it, expect } from 'vitest';
 import matter from 'gray-matter';
-import { serializeRecipe, extractRecipe } from './recipeFormat';
+import { serializeRecipe, extractRecipe, recipeBodyMarkdown } from './recipeFormat';
+
+describe('recipeBodyMarkdown', () => {
+  it('builds description + one Ingredients + one Instructions section', () => {
+    const body = recipeBodyMarkdown({
+      description: 'Tasty.',
+      ingredients: [{ item: 'Onion', proportion: '2' }, { item: 'Salt', proportion: '' }],
+      steps: ['Chop.', 'Cook.'],
+    });
+    expect(body).toContain('Tasty.');
+    expect((body.match(/## Ingredients/g) || []).length).toBe(1);
+    expect((body.match(/## Instructions/g) || []).length).toBe(1);
+    expect(body).toContain('- **2** Onion');
+    expect(body).toContain('- Salt');
+    expect(body).toContain('1. Chop.');
+  });
+
+  it('omits a heading when every entry is blank (no dangling heading)', () => {
+    const body = recipeBodyMarkdown({ description: 'Note.', ingredients: [{ item: '', proportion: '' }], steps: [] });
+    expect(body).not.toContain('## Ingredients');
+    expect(body).not.toContain('## Instructions');
+    expect(body.trim()).toBe('Note.');
+  });
+});
 
 describe('serializeRecipe', () => {
   it('writes content to the body and keeps only metadata in frontmatter', () => {

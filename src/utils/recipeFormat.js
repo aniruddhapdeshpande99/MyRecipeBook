@@ -1,32 +1,40 @@
 import matter from 'gray-matter';
 
-export function serializeRecipe(recipe = {}) {
-  const {
-    title = '', category = '', description = '',
-    prepTime = '', cookTime = '', yieldVal = '',
-    imageUrl = '', miseEnPlace = [],
-    ingredients = [], steps = [],
-  } = recipe;
-
+export function recipeBodyMarkdown(recipe = {}) {
+  const { description = '', ingredients = [], steps = [] } = recipe;
   let body = String(description || '').trim();
 
-  if (Array.isArray(ingredients) && ingredients.length > 0) {
+  const ings = (Array.isArray(ingredients) ? ingredients : [])
+    .map(ing => typeof ing === 'string'
+      ? { item: ing.trim(), proportion: '' }
+      : { item: String(ing.item || '').trim(), proportion: String(ing.proportion || '').trim() })
+    .filter(i => i.item || i.proportion);
+  if (ings.length > 0) {
     body += '\n\n## Ingredients\n\n';
-    for (const ing of ingredients) {
-      const item = String(typeof ing === 'string' ? ing : (ing.item || '')).trim();
-      const proportion = String(typeof ing === 'string' ? '' : (ing.proportion || '')).trim();
-      if (!item && !proportion) continue;
-      body += proportion ? `- **${proportion}** ${item}\n` : `- ${item}\n`;
+    for (const ing of ings) {
+      body += ing.proportion ? `- **${ing.proportion}** ${ing.item}\n` : `- ${ing.item}\n`;
     }
   }
 
-  if (Array.isArray(steps) && steps.length > 0) {
+  const sts = (Array.isArray(steps) ? steps : [])
+    .map(s => String(typeof s === 'string' ? s : String(s)).trim())
+    .filter(Boolean);
+  if (sts.length > 0) {
     body += '\n\n## Instructions\n\n';
-    steps.forEach((step, i) => {
-      const s = String(typeof step === 'string' ? step : String(step)).trim();
-      body += `${i + 1}. ${s}\n`;
-    });
+    sts.forEach((s, i) => { body += `${i + 1}. ${s}\n`; });
   }
+
+  return body.trim();
+}
+
+export function serializeRecipe(recipe = {}) {
+  const {
+    title = '', category = '',
+    prepTime = '', cookTime = '', yieldVal = '',
+    imageUrl = '', miseEnPlace = [],
+  } = recipe;
+
+  const body = recipeBodyMarkdown(recipe);
 
   const data = { title, category };
   if (prepTime) data.prepTime = prepTime;
@@ -35,7 +43,7 @@ export function serializeRecipe(recipe = {}) {
   if (imageUrl) data.imageUrl = imageUrl;
   if (Array.isArray(miseEnPlace) && miseEnPlace.length > 0) data.miseEnPlace = miseEnPlace;
 
-  return matter.stringify(body ? `${body.trim()}\n` : '', data);
+  return matter.stringify(body ? `${body}\n` : '', data);
 }
 
 export function extractRecipe(rawContent = '') {
