@@ -34,6 +34,9 @@ export function parseRecipe(filePath, rawContent) {
     imageUrl: r.imageUrl || '',
     miseEnPlace: r.miseEnPlace || [],
     description: r.description,
+    ingredients: r.ingredients,
+    steps: r.steps,
+    notes: r.notes,
     content: r.content,
   };
 }

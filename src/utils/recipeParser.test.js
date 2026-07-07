@@ -87,4 +87,27 @@ Best served with rice.
     const result = parseRecipe('data/recipes/rajma.md', raw);
     expect(result.description).toBe('Best served with rice.');
   });
+
+  it('surfaces ingredients, steps, and notes from the body', () => {
+    const raw = `---
+title: X
+category: C
+---
+Desc.
+
+## Ingredients
+- **2** Beans
+
+## Instructions
+1. Cook.
+
+## Notes
+
+Soak overnight.
+`;
+    const r = parseRecipe('data/recipes/x.md', raw);
+    expect(r.ingredients).toEqual([{ proportion: '2', item: 'Beans' }]);
+    expect(r.steps).toEqual(['Cook.']);
+    expect(r.notes).toBe('## Notes\n\nSoak overnight.');
+  });
 });
