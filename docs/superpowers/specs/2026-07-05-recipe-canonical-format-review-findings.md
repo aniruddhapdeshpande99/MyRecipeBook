@@ -105,3 +105,16 @@ Decide how "body-authoritative" should really behave. Options to weigh:
 3. Harden the edges regardless: recursive migration (D), a render fallback for
    non-canonical files (C), keep the folder/'General' category default (F),
    and stop stripping `_`/`*` from descriptions (B).
+
+## Iteration 1 review resolution (2026-07-06, plan `2026-07-06-review-iter1-notes-and-fixes.md`)
+
+Second `/code-review max` pass on the branch surfaced these; all resolved or adjudicated:
+
+- `## Notes`/Tips/Origin sections now preserved through render, migration, and editor save (`notes` passthrough: `extractRecipe.notes` → `recipeBodyMarkdown` → detail page + POST merge). Verified live. — Resolved.
+- `Directions` heading recognized as a steps section. — Resolved.
+- `## info` yield regex anchored (`\b(serves?|servings?|yield|makes)\b`), no longer matches "preserve"/"reserve". — Resolved.
+- `recipeBodyMarkdown` reuses `normalizeIngredients`/`normalizeSteps`; detail page extracts once (`recipeBodyMarkdown(recipe)`). — Resolved.
+- `## info` metadata block excluded from `notes` capture (avoids frontmatter/body duplication). — Resolved.
+- Folder-derived category in the API GET — not applicable: GET resolves only flat and structured-by-slug paths, so subfolder recipes 404 and cannot be loaded/edited. Documented limitation.
+- Legacy `**Prep**`/`## info` metadata fallbacks — kept (covered by `recipeParser` tests; deliberately restored).
+- `###` ingredient-subgroup preservation — still a non-goal (needs an ingredient-group data model; no recipe uses it, and the structured editor cannot create them).
