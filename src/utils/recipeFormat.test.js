@@ -260,6 +260,22 @@ D.
     expect(extractRecipe(raw).notes).toBe('');
     expect(serializeRecipe(extractRecipe(raw))).not.toContain('## Notes');
   });
+
+  it('does not capture a legacy ## info metadata block as notes', () => {
+    const raw = `---
+title: X
+---
+D.
+
+## info
+- 25 minutes
+- Serves 4
+
+## Ingredients
+- Beans
+`;
+    expect(extractRecipe(raw).notes).toBe('');
+  });
 });
 
 describe('Directions heading + yield regex', () => {

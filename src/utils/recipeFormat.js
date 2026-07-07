@@ -158,7 +158,7 @@ function extractNotes(content) {
   for (const raw of content.split(/\r?\n/)) {
     const t = raw.trim();
     if (/^##\s+/.test(t)) {
-      capturing = !/^##\s+(ingredient|instruction|step|method|direction)/i.test(t);
+      capturing = !/^##\s+(ingredient|instruction|step|method|direction|info)/i.test(t);
       if (capturing) out.push(raw);
       continue;
     }
