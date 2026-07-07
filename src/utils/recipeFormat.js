@@ -1,14 +1,10 @@
 import matter from 'gray-matter';
 
 export function recipeBodyMarkdown(recipe = {}) {
-  const { description = '', ingredients = [], steps = [] } = recipe;
+  const { description = '', ingredients = [], steps = [], notes = '' } = recipe;
   let body = String(description || '').trim();
 
-  const ings = (Array.isArray(ingredients) ? ingredients : [])
-    .map(ing => typeof ing === 'string'
-      ? { item: ing.trim(), proportion: '' }
-      : { item: String(ing.item || '').trim(), proportion: String(ing.proportion || '').trim() })
-    .filter(i => i.item || i.proportion);
+  const ings = normalizeIngredients(ingredients);
   if (ings.length > 0) {
     body += '\n\n## Ingredients\n\n';
     for (const ing of ings) {
@@ -16,13 +12,14 @@ export function recipeBodyMarkdown(recipe = {}) {
     }
   }
 
-  const sts = (Array.isArray(steps) ? steps : [])
-    .map(s => String(typeof s === 'string' ? s : String(s)).trim())
-    .filter(Boolean);
+  const sts = normalizeSteps(steps);
   if (sts.length > 0) {
     body += '\n\n## Instructions\n\n';
     sts.forEach((s, i) => { body += `${i + 1}. ${s}\n`; });
   }
+
+  const n = String(notes || '').trim();
+  if (n) body += `\n\n${n}`;
 
   return body.trim();
 }
@@ -90,7 +87,7 @@ export function extractRecipe(rawContent = '') {
         if (/time|minute|hour/i.test(text)) {
           if (!prepTime) prepTime = text;
           else if (!cookTime) cookTime = text;
-        } else if (/serve|serving|yield|makes/i.test(text)) {
+        } else if (/\b(serves?|servings?|yield|makes)\b/i.test(text)) {
           if (!yieldVal) yieldVal = text;
         }
       }
@@ -108,6 +105,7 @@ export function extractRecipe(rawContent = '') {
     miseEnPlace: Array.isArray(data.miseEnPlace) ? data.miseEnPlace : [],
     ingredients,
     steps,
+    notes: extractNotes(content),
     content,
   };
 }
@@ -138,7 +136,7 @@ function parseBodySections(content) {
   for (const line of content.split(/\r?\n/)) {
     const t = line.trim();
     if (/^#{1,2}\s+ingredient/i.test(t)) { inIngredients = true; inSteps = false; continue; }
-    if (/^#{1,2}\s+(instruction|step|method)/i.test(t)) { inSteps = true; inIngredients = false; continue; }
+    if (/^#{1,2}\s+(instruction|step|method|direction)/i.test(t)) { inSteps = true; inIngredients = false; continue; }
     if (/^#{1,2}\s+/.test(t)) { inIngredients = false; inSteps = false; continue; }
     if (inIngredients && (t.startsWith('- ') || t.startsWith('* '))) {
       const itemStr = t.replace(/^[-*]\s*/, '').trim();
@@ -152,6 +150,22 @@ function parseBodySections(content) {
     }
   }
   return { ingredients, steps };
+}
+
+function extractNotes(content) {
+  const out = [];
+  let capturing = false;
+  for (const raw of content.split(/\r?\n/)) {
+    const t = raw.trim();
+    if (/^##\s+/.test(t)) {
+      capturing = !/^##\s+(ingredient|instruction|step|method|direction)/i.test(t);
+      if (capturing) out.push(raw);
+      continue;
+    }
+    if (/^#\s+/.test(t)) { capturing = false; continue; }
+    if (capturing) out.push(raw);
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function extractDescription(content, title) {

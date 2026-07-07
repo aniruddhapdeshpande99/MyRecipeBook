@@ -206,3 +206,90 @@ A classic.
     expect(r.yieldVal).toBe('Serves 4');
   });
 });
+
+describe('notes passthrough', () => {
+  it('extractRecipe captures a ## Notes section verbatim', () => {
+    const raw = `---
+title: X
+---
+Desc.
+
+## Ingredients
+
+- Beans
+
+## Instructions
+
+1. Cook.
+
+## Notes
+
+Soak overnight. Keep _spicy_.
+`;
+    expect(extractRecipe(raw).notes).toBe('## Notes\n\nSoak overnight. Keep _spicy_.');
+  });
+
+  it('recipeBodyMarkdown re-emits notes after Instructions', () => {
+    const body = recipeBodyMarkdown({
+      description: 'D.', ingredients: [{ item: 'Beans', proportion: '' }],
+      steps: ['Cook.'], notes: '## Notes\n\nSoak overnight.',
+    });
+    expect(body.indexOf('## Notes')).toBeGreaterThan(body.indexOf('## Instructions'));
+    expect(body).toContain('Soak overnight.');
+  });
+
+  it('round-trips notes through serialize + extract', () => {
+    const original = {
+      title: 'X', category: 'C', description: 'D.',
+      ingredients: [{ item: 'Beans', proportion: '2' }], steps: ['Cook.'],
+      notes: '## Notes\n\nSoak overnight.',
+    };
+    expect(extractRecipe(serializeRecipe(original)).notes).toBe('## Notes\n\nSoak overnight.');
+  });
+
+  it('no notes → empty string, no trailing heading', () => {
+    const raw = `---
+title: X
+---
+D.
+
+## Ingredients
+
+- Beans
+`;
+    expect(extractRecipe(raw).notes).toBe('');
+    expect(serializeRecipe(extractRecipe(raw))).not.toContain('## Notes');
+  });
+});
+
+describe('Directions heading + yield regex', () => {
+  it('parses steps under a ## Directions heading', () => {
+    const raw = `---
+title: X
+---
+D.
+
+## Directions
+
+1. Chop.
+2. Fry.
+`;
+    expect(extractRecipe(raw).steps).toEqual(['Chop.', 'Fry.']);
+  });
+
+  it('## info yield does not match "preserve"/"reserve"', () => {
+    const raw = `---
+title: X
+---
+D.
+
+## info
+- Preserve leftovers in the fridge
+- Serves 4
+
+## Ingredients
+- Beans
+`;
+    expect(extractRecipe(raw).yieldVal).toBe('Serves 4');
+  });
+});
