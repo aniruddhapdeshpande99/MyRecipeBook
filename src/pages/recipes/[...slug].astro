@@ -2,7 +2,7 @@
 // @ts-nocheck
 import Layout from '../../layouts/Layout.astro';
 import { parseRecipe } from '../../utils/recipeParser';
-import { extractRecipe, recipeBodyMarkdown } from '../../utils/recipeFormat';
+import { recipeBodyMarkdown } from '../../utils/recipeFormat';
 import { sanitiseSlug } from '../../utils/slugUtils';
 import fsPromises from 'node:fs/promises';
 import fs from 'node:fs';
@@ -30,10 +30,11 @@ try {
 
 const recipe: any = parseRecipe(filePath, rawContent);
 
-// Render from the canonical structured recipe, so the page is correct for ANY
-// on-disk shape (frontmatter-array, legacy #-heading, or canonical body) and
-// never leaks raw YAML. recipeBodyMarkdown emits exactly one of each section.
-const contentForRender = recipeBodyMarkdown(extractRecipe(rawContent));
+// Render from the canonical structured recipe (parseRecipe already carries
+// description/ingredients/steps/notes), so the page is correct for ANY on-disk
+// shape, never leaks raw YAML, emits exactly one of each section, and preserves
+// ## Notes-style sections. Single parse — no second extractRecipe call.
+const contentForRender = recipeBodyMarkdown(recipe);
 const htmlContent = marked.parse(contentForRender);
 
 const imageBasename = safeSlug;
