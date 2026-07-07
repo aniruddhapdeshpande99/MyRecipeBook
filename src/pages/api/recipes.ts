@@ -131,17 +131,26 @@ export async function POST({ request }: { request: Request }) {
     }
   }
 
+  const mdFilename = `${recipeSlug}.md`;
+  const mdPath = path.join(process.cwd(), 'data', 'recipes', mdFilename);
+
+  let existingNotes = '';
+  try {
+    existingNotes = extractRecipe(await fs.readFile(mdPath, 'utf-8')).notes || '';
+  } catch {
+    // new recipe — no existing notes
+  }
+
   const fileContent = serializeRecipe({
     title, category, description,
     prepTime, cookTime, yieldVal,
     imageUrl: finalImageUrl, miseEnPlace: finalMiseEnPlace,
-    ingredients, steps,
+    ingredients, steps, notes: existingNotes,
   });
 
-  const mdFilename = `${recipeSlug}.md`;
   await fs.mkdir(path.join(process.cwd(), 'data', 'recipes'), { recursive: true });
-  await fs.writeFile(path.join(process.cwd(), 'data', 'recipes', mdFilename), fileContent);
-  
+  await fs.writeFile(mdPath, fileContent);
+
   return new Response(
     JSON.stringify({ success: true, slug: recipeSlug }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
