@@ -128,3 +128,8 @@ Second `/code-review max` pass on the branch surfaced these; all resolved or adj
 - POST notes-read swallows errors → wipe on malformed YAML — accepted as unreachable: the app only writes valid YAML via `matter.stringify`, and a malformed file already 404s on GET (cannot be loaded to edit).
 - Folder-derived category in API GET — accepted limitation: GET resolves only flat/structured-by-slug paths, so subfolder recipes 404 and cannot be loaded/edited.
 - Editor has no Notes UI — accepted: product gap, not a regression. Notes authored in the markdown file survive edits; a Notes editor field is future work.
+
+## Iteration 3 review resolution (2026-07-07, inline TDD)
+
+- `classifyHeading` now tolerates trailing whitespace/colons/closed-ATX hashes, so `## Ingredients ##` (closed ATX) and `## Info:` (colon) classify correctly — fixes a regression from iteration-2's exact-match. `deriveTitleFromBody` and the `## info` scan aligned to the same trailing-punctuation handling (title colon stripped). — Resolved.
+- Client-side heading routing in `[...slug].astro` uses substring matching (`text.includes('ingredient')` etc.), inconsistent with the server's exact `classifyHeading` — accepted as **pre-existing**: that inline script predates this branch and behaved identically before (the full body was always rendered), so it is not a regression introduced here. Aligning the client router with the server classifier is separate follow-up work; affects only unusual headings that contain a schema keyword (e.g. `## Storage Instructions`) and no current recipe uses them.
