@@ -118,3 +118,13 @@ Second `/code-review max` pass on the branch surfaced these; all resolved or adj
 - Folder-derived category in the API GET — not applicable: GET resolves only flat and structured-by-slug paths, so subfolder recipes 404 and cannot be loaded/edited. Documented limitation.
 - Legacy `**Prep**`/`## info` metadata fallbacks — kept (covered by `recipeParser` tests; deliberately restored).
 - `###` ingredient-subgroup preservation — still a non-goal (needs an ingredient-group data model; no recipe uses it, and the structured editor cannot create them).
+
+## Iteration 2 review resolution (2026-07-07, plan `2026-07-07-review-iter2-heading-classifier.md`)
+
+- Root cause of recurring notes/section-loss: three drifting heading regexes. Fixed by one shared `classifyHeading`; `## Ingredient Substitutions`/`## Method Notes` now classify as notes (not phantom ingredients/steps), and single-`#` `# Tips`/`# Notes` are captured. — Resolved.
+- `## info` yield regex now matches plural "Yields". — Resolved.
+- Dead `content` field removed from recipe reads. — Resolved.
+- Notes reordered to end of body on save/migration — accepted: the canonical body order is description → ingredients → instructions → notes; content is preserved, only position is normalized.
+- POST notes-read swallows errors → wipe on malformed YAML — accepted as unreachable: the app only writes valid YAML via `matter.stringify`, and a malformed file already 404s on GET (cannot be loaded to edit).
+- Folder-derived category in API GET — accepted limitation: GET resolves only flat/structured-by-slug paths, so subfolder recipes 404 and cannot be loaded/edited.
+- Editor has no Notes UI — accepted: product gap, not a regression. Notes authored in the markdown file survive edits; a Notes editor field is future work.
