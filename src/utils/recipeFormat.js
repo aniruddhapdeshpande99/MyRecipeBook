@@ -87,7 +87,7 @@ export function extractRecipe(rawContent = '') {
         if (/time|minute|hour/i.test(text)) {
           if (!prepTime) prepTime = text;
           else if (!cookTime) cookTime = text;
-        } else if (/\b(serves?|servings?|yield|makes)\b/i.test(text)) {
+        } else if (/\b(serves?|servings?|yields?|makes)\b/i.test(text)) {
           if (!yieldVal) yieldVal = text;
         }
       }
@@ -129,23 +129,33 @@ function deriveTitleFromBody(content) {
   return m ? m[1].trim() : '';
 }
 
+function classifyHeading(line) {
+  const m = String(line).trim().match(/^(#{1,2})\s+(.+?)\s*:?\s*$/);
+  if (!m) return null;
+  const text = m[2].trim().toLowerCase();
+  if (/^ingredients?$/.test(text)) return 'ingredients';
+  if (/^(instructions?|steps?|methods?|directions?)$/.test(text)) return 'steps';
+  if (/^info$/.test(text)) return 'meta';
+  if (/^(notes?|tips?|origins?)$/.test(text) || /^based on\b/.test(text)) return 'notes';
+  return m[1] === '##' ? 'notes' : 'title';
+}
+
 function parseBodySections(content) {
   const ingredients = [];
   const steps = [];
-  let inIngredients = false, inSteps = false;
+  let section = null;
   for (const line of content.split(/\r?\n/)) {
     const t = line.trim();
-    if (/^#{1,2}\s+ingredient/i.test(t)) { inIngredients = true; inSteps = false; continue; }
-    if (/^#{1,2}\s+(instruction|step|method|direction)/i.test(t)) { inSteps = true; inIngredients = false; continue; }
-    if (/^#{1,2}\s+/.test(t)) { inIngredients = false; inSteps = false; continue; }
-    if (inIngredients && (t.startsWith('- ') || t.startsWith('* '))) {
+    const kind = classifyHeading(t);
+    if (kind) { section = (kind === 'ingredients' || kind === 'steps') ? kind : null; continue; }
+    if (section === 'ingredients' && (t.startsWith('- ') || t.startsWith('* '))) {
       const itemStr = t.replace(/^[-*]\s*/, '').trim();
       const m = itemStr.match(/^\*\*(.+?)\*\*\s*(.*)$/);
       if (m) ingredients.push({ proportion: m[1].trim(), item: m[2].trim() });
       else ingredients.push({ item: itemStr, proportion: '' });
-    } else if (inSteps && /^\d+\.\s+/.test(t)) {
+    } else if (section === 'steps' && /^\d+\.\s+/.test(t)) {
       steps.push(t.replace(/^\d+\.\s*/, '').trim());
-    } else if (inSteps && (t.startsWith('- ') || t.startsWith('* '))) {
+    } else if (section === 'steps' && (t.startsWith('- ') || t.startsWith('* '))) {
       steps.push(t.replace(/^[-*]\s*/, '').trim());
     }
   }
@@ -156,13 +166,12 @@ function extractNotes(content) {
   const out = [];
   let capturing = false;
   for (const raw of content.split(/\r?\n/)) {
-    const t = raw.trim();
-    if (/^##\s+/.test(t)) {
-      capturing = !/^##\s+(ingredient|instruction|step|method|direction|info)/i.test(t);
+    const kind = classifyHeading(raw);
+    if (kind) {
+      capturing = kind === 'notes';
       if (capturing) out.push(raw);
       continue;
     }
-    if (/^#\s+/.test(t)) { capturing = false; continue; }
     if (capturing) out.push(raw);
   }
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
@@ -171,10 +180,10 @@ function extractNotes(content) {
 function extractDescription(content, title) {
   const collected = [];
   for (const raw of content.split(/\r?\n/)) {
+    const kind = classifyHeading(raw);
+    if (kind === 'ingredients' || kind === 'steps' || kind === 'notes' || kind === 'meta') break;
+    if (kind === 'title') continue;
     const line = raw.trim();
-    if (/^##\s+/.test(line)) break;                                   // ## section heading
-    if (/^#\s+(ingredient|instruction|step|method|note|tip)/i.test(line)) break; // legacy single-# section
-    if (line.startsWith('# ')) continue;                              // legacy title heading
     if (line.startsWith('**Prep') || line.startsWith('**Cook') || line.startsWith('**Yield')) continue;
     if (line.startsWith('---')) continue;
     collected.push(raw);

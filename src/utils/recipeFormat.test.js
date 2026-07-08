@@ -309,3 +309,56 @@ D.
     expect(extractRecipe(raw).yieldVal).toBe('Serves 4');
   });
 });
+
+describe('heading classification precision', () => {
+  it('treats a multi-word "## Ingredient Substitutions" as notes, not ingredients', () => {
+    const raw = `---
+title: X
+---
+D.
+
+## Ingredients
+- **2** Beans
+
+## Ingredient Substitutions
+- Use almond milk instead of milk
+`;
+    const r = extractRecipe(raw);
+    expect(r.ingredients).toEqual([{ proportion: '2', item: 'Beans' }]); // no phantom entry
+    expect(r.notes).toContain('## Ingredient Substitutions');
+    expect(r.notes).toContain('Use almond milk instead of milk');
+  });
+
+  it('captures a legacy single-# "# Tips" section as notes', () => {
+    const raw = `---
+title: X
+---
+D.
+
+# Ingredients
+- Beans
+
+# Tips
+
+Soak overnight.
+`;
+    const r = extractRecipe(raw);
+    expect(r.ingredients).toEqual([{ item: 'Beans', proportion: '' }]);
+    expect(r.notes).toBe('# Tips\n\nSoak overnight.');
+  });
+
+  it('## info yield matches plural "Yields 6"', () => {
+    const raw = `---
+title: X
+---
+D.
+
+## info
+- Yields 6
+
+## Ingredients
+- Beans
+`;
+    expect(extractRecipe(raw).yieldVal).toBe('Yields 6');
+  });
+});
