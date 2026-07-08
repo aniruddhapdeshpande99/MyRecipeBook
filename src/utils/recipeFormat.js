@@ -106,7 +106,6 @@ export function extractRecipe(rawContent = '') {
     ingredients,
     steps,
     notes: extractNotes(content),
-    content,
   };
 }
 

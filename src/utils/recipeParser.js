@@ -37,6 +37,5 @@ export function parseRecipe(filePath, rawContent) {
     ingredients: r.ingredients,
     steps: r.steps,
     notes: r.notes,
-    content: r.content,
   };
 }
