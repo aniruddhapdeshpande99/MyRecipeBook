@@ -1,0 +1,135 @@
+# Recipe Canonical Format — Code Review Findings (for follow-up brainstorming)
+
+Date: 2026-07-05
+Source: `/code-review max` (2 independent finder passes + inline analysis) on branch `fix/recipe-canonical-format`.
+Status: The two REPORTED bugs (dropped description edits, doubled steps) are FIXED and verified live. The findings below are ADDITIONAL faults surfaced by the review.
+
+## Resolution (2026-07-05, plan `2026-07-05-recipe-format-review-fixes.md`)
+
+All findings addressed; verified live after re-migration + redeploy.
+
+- **A** (multi-paragraph description) — **Resolved** in Fix-Task 2 (`extractDescription` now captures the full pre-section block verbatim). Rajma's "Bonus - Spiced Lemon Onion Salad" paragraph was **recovered from backup** and re-migrated (Fix-Task 6).
+- **B** (`*`/`_` stripping) — **Resolved** in Fix-Task 2 (description kept verbatim; round-trip of `_under_`/`*star*` confirmed live).
+- **C** (raw-frontmatter / blank render) — **Resolved** in Fix-Task 3 (detail page renders `recipeBodyMarkdown(extractRecipe(raw))`; no YAML leak).
+- **D** (migration misses subfolders) — **Resolved** in Fix-Task 5 (recursive `migrateDir`).
+- **E** (`## info` metadata) — **Resolved** in Fix-Task 2 (fallback restored in `extractRecipe`).
+- **F** (empty category in API) — **Resolved** in Fix-Task 4 (GET single + list default to `General`).
+- **G** (dangling heading) — **Resolved** in Fix-Task 1 (`recipeBodyMarkdown` filters blank entries before emitting a heading).
+- **H** (text-only save on fresh install) — **Resolved** in Fix-Task 4 (POST `mkdir`s `data/recipes` before write).
+- **A-Notes / `###` ingredient subgroups** — **Deferred (non-goal):** round-tripping arbitrary `## Notes`/`## Tips` sections and `###` ingredient-group headings through the structured editor needs editor UI + a richer data model; no current recipe uses them.
+
+## Theme
+
+The chosen "body-authoritative" format is, as implemented, actually
+**structured-field-authoritative**: `serializeRecipe` rebuilds the Markdown body
+from only `description` (first line) + `ingredients` + `steps`. So the
+extract→serialize round-trip (run on every editor save AND by the migration) is
+**lossy** — any body content that isn't one of those three fields is discarded,
+and description punctuation is mangled.
+
+## LIVE findings (affect the current 4 recipes / next edit)
+
+### A. Lossy round-trip drops body content beyond description/ingredients/steps  — HIGH
+`extractRecipe` captures description as only the first qualifying body line, and
+`parseBodySections` only captures lines inside `## Ingredients`/`## Instructions`.
+`serializeRecipe` has no slot for anything else. So second paragraphs,
+`## Notes`/`## Tips`/`## Storage` sections, prose after the steps, blockquotes,
+and `###` ingredient subgroup headings (a feature the detail-page client JS
+explicitly renders) are **silently dropped** on every save and on migration.
+- **Confirmed:** the migration already deleted rajma's second paragraph
+  "Bonus - Spiced Lemon Onion Salad" (present in `data/recipes.bak-20260705211848/`,
+  gone from the live file).
+- Files: `src/utils/recipeFormat.js` (`extractRecipe`, `parseBodySections`,
+  `serializeRecipe`), `scripts/migrate-recipes.mjs`.
+
+### B. Description strips literal `*` and `_` — MEDIUM-HIGH
+`extractDescription` does `desc.replace(/\*\*|\*|_/g, '')`, deleting every literal
+asterisk/underscore, not just emphasis delimiters. Because description now lives
+only in the body (never frontmatter), it is forced through this lossy parser on
+every read. E.g. `"Mom's *Famous* Chili_Verde"` → `"Mom's Famous ChiliVerde"`
+(underscore deleted, words fused), permanently and idempotently.
+- File: `src/utils/recipeFormat.js:~142`.
+
+## LATENT findings (no current trigger — no subfolder recipes, all 4 migrated & categorized)
+
+### C. Detail page renders raw frontmatter / blank for a non-canonical file — HIGH-if-triggered
+With the frontmatter→body synthesis removed, a frontmatter-array-only file (empty
+body) makes `mdBody.trim()===''` → `contentForRender || rawContent` falls back to
+the **raw file text** (YAML and all), which `marked` renders literally; the
+client column-builder finds no headings and shows a blank recipe. Safe only
+because every current file was migrated to have body sections.
+- File: `src/pages/recipes/[...slug].astro:~36-39`.
+
+### D. Migration misses category subfolders — MEDIUM
+`migrate-recipes.mjs` uses a single non-recursive `fs.readdir` and only migrates
+top-level `*.md`. `data/recipes/<Category>/recipe.md` (documented in CLAUDE.md,
+handled by the recursive GET `walk`) would be skipped, leaving it exposed to
+finding C. No subfolder recipes exist today.
+- File: `scripts/migrate-recipes.mjs:11-14`.
+
+### E. Lost `## info` metadata fallback (legacy "Jeff" format) — LOW-MEDIUM
+`extractRecipe` dropped the old `parseRecipe` third-tier fallback that parsed
+prepTime/yield from a `## info` bullet list. A recipe with times only in `## info`
+now yields empty metadata (and migration bakes the loss in). No current file uses
+this shape.
+- File: `src/utils/recipeFormat.js` (metadata section).
+
+### F. `category` no longer falls back to folder/'General' in the API — MEDIUM
+`extractRecipe` returns `category: data.category || ''`; the old GET merged
+`parseRecipe`'s folder/'General' default. A category-less file would now load a
+blank category into the editor and re-save with category dropped. All 4 current
+files have explicit categories, so latent. (`parseRecipe` itself still applies the
+path fallback for index/detail; only the API GET path regressed.)
+- File: `src/utils/recipeFormat.js:~75`, consumed by `src/pages/api/recipes.ts`.
+
+### G. `serializeRecipe` can emit a dangling `## Ingredients` heading — LOW
+The heading is written when `ingredients.length > 0`, but each entry can be
+skipped inside the loop (`if (!item && !proportion) continue`). An all-blank array
+yields a heading with no list.
+- File: `src/utils/recipeFormat.js:13-21`.
+
+### H. Text-only save fails if `data/recipes/` doesn't exist — LOW
+POST removed the unconditional `mkdir(recipeDir)`; a text-only save on a fresh
+install where `data/recipes/` is absent would `ENOENT` on `writeFile`. The dir
+always exists in this deployment.
+- File: `src/pages/api/recipes.ts` (POST).
+
+## Suggested direction for the brainstorming
+
+Decide how "body-authoritative" should really behave. Options to weigh:
+1. **Preserve the full body verbatim** — keep the user's Markdown body as-is;
+   derive/patch only the structured pieces the UI needs, instead of regenerating
+   the whole body from 3 fields. Eliminates A, B, and the `### ` subgroup loss.
+2. **Extend the structured model** — add fields for notes, multi-paragraph
+   description, and ingredient groups; preserve unknown sections.
+3. Harden the edges regardless: recursive migration (D), a render fallback for
+   non-canonical files (C), keep the folder/'General' category default (F),
+   and stop stripping `_`/`*` from descriptions (B).
+
+## Iteration 1 review resolution (2026-07-06, plan `2026-07-06-review-iter1-notes-and-fixes.md`)
+
+Second `/code-review max` pass on the branch surfaced these; all resolved or adjudicated:
+
+- `## Notes`/Tips/Origin sections now preserved through render, migration, and editor save (`notes` passthrough: `extractRecipe.notes` → `recipeBodyMarkdown` → detail page + POST merge). Verified live. — Resolved.
+- `Directions` heading recognized as a steps section. — Resolved.
+- `## info` yield regex anchored (`\b(serves?|servings?|yield|makes)\b`), no longer matches "preserve"/"reserve". — Resolved.
+- `recipeBodyMarkdown` reuses `normalizeIngredients`/`normalizeSteps`; detail page extracts once (`recipeBodyMarkdown(recipe)`). — Resolved.
+- `## info` metadata block excluded from `notes` capture (avoids frontmatter/body duplication). — Resolved.
+- Folder-derived category in the API GET — not applicable: GET resolves only flat and structured-by-slug paths, so subfolder recipes 404 and cannot be loaded/edited. Documented limitation.
+- Legacy `**Prep**`/`## info` metadata fallbacks — kept (covered by `recipeParser` tests; deliberately restored).
+- `###` ingredient-subgroup preservation — still a non-goal (needs an ingredient-group data model; no recipe uses it, and the structured editor cannot create them).
+
+## Iteration 2 review resolution (2026-07-07, plan `2026-07-07-review-iter2-heading-classifier.md`)
+
+- Root cause of recurring notes/section-loss: three drifting heading regexes. Fixed by one shared `classifyHeading`; `## Ingredient Substitutions`/`## Method Notes` now classify as notes (not phantom ingredients/steps), and single-`#` `# Tips`/`# Notes` are captured. — Resolved.
+- `## info` yield regex now matches plural "Yields". — Resolved.
+- Dead `content` field removed from recipe reads. — Resolved.
+- Notes reordered to end of body on save/migration — accepted: the canonical body order is description → ingredients → instructions → notes; content is preserved, only position is normalized.
+- POST notes-read swallows errors → wipe on malformed YAML — accepted as unreachable: the app only writes valid YAML via `matter.stringify`, and a malformed file already 404s on GET (cannot be loaded to edit).
+- Folder-derived category in API GET — accepted limitation: GET resolves only flat/structured-by-slug paths, so subfolder recipes 404 and cannot be loaded/edited.
+- Editor has no Notes UI — accepted: product gap, not a regression. Notes authored in the markdown file survive edits; a Notes editor field is future work.
+
+## Iteration 3 review resolution (2026-07-07, inline TDD)
+
+- `classifyHeading` now tolerates trailing whitespace/colons/closed-ATX hashes, so `## Ingredients ##` (closed ATX) and `## Info:` (colon) classify correctly — fixes a regression from iteration-2's exact-match. `deriveTitleFromBody` and the `## info` scan aligned to the same trailing-punctuation handling (title colon stripped). — Resolved.
+- Client-side heading routing in `[...slug].astro` uses substring matching (`text.includes('ingredient')` etc.), inconsistent with the server's exact `classifyHeading` — accepted as **pre-existing**: that inline script predates this branch and behaved identically before (the full body was always rendered), so it is not a regression introduced here. Aligning the client router with the server classifier is separate follow-up work; affects only unusual headings that contain a schema keyword (e.g. `## Storage Instructions`) and no current recipe uses them.

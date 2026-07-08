@@ -32,6 +32,8 @@ services:
       - ./public:/app/public
       - ./data:/app/data
       - ./astro.config.mjs:/app/astro.config.mjs
+      - ./vitest.config.ts:/app/vitest.config.ts
+      - ./vitest.setup.ts:/app/vitest.setup.ts
       # node_modules lives INSIDE the container — never touched by host npm
       # This is the key: the named volume shadows the host bind-mount
       - dev_node_modules:/app/node_modules

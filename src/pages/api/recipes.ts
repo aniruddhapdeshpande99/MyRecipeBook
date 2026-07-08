@@ -1,9 +1,8 @@
 // @ts-nocheck
 import fs from 'fs/promises';
 import path from 'path';
-import matter from 'gray-matter';
 import { sanitiseSlug } from '../../utils/slugUtils';
-import { parseRecipe } from '../../utils/recipeParser';
+import { extractRecipe, serializeRecipe } from '../../utils/recipeFormat';
 
 export async function GET({ request }: { request: Request }) {
   const dataDir = path.join(process.cwd(), 'data', 'recipes');
@@ -16,12 +15,10 @@ export async function GET({ request }: { request: Request }) {
     const safeSlug = sanitiseSlug(slug);
     if (!safeSlug) {
       return new Response(JSON.stringify({ error: 'Invalid slug' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
-    
-    // Check both new structured storage and old flat storage
+
     let filePath = path.join(dataDir, safeSlug, `${safeSlug}.md`);
     try {
       await fs.access(filePath);
@@ -31,83 +28,23 @@ export async function GET({ request }: { request: Request }) {
 
     try {
       const raw = await fs.readFile(filePath, 'utf-8');
-      const parsed = matter(raw);
-      const parsedRecipe = parseRecipe(filePath, raw);
-      
-      let ingredients = parsed.data.ingredients;
-      let steps = parsed.data.steps;
+      const r = extractRecipe(raw);
 
-      // Extract from markdown body if missing in frontmatter
-      if (!ingredients || !steps || ingredients.length === 0 || steps.length === 0) {
-        ingredients = [];
-        steps = [];
-        const lines = parsed.content.split(/\r?\n/);
-        let inIngredients = false;
-        let inSteps = false;
-
-        for (const line of lines) {
-          const t = line.trim();
-          if (/^##\s+ingredient/i.test(t)) {
-            inIngredients = true;
-            inSteps = false;
-            continue;
-          }
-          if (/^##\s+(instruction|step|method)/i.test(t)) {
-            inSteps = true;
-            inIngredients = false;
-            continue;
-          }
-          if (/^##\s+/.test(t)) {
-            inIngredients = false;
-            inSteps = false;
-            continue;
-          }
-
-          if (inIngredients && (t.startsWith('- ') || t.startsWith('* '))) {
-            let itemStr = t.replace(/^[-*]\s*/, '').trim();
-            const proportionMatch = itemStr.match(/^\*\*(.+?)\*\*\s*(.*)$/);
-            if (proportionMatch) {
-              ingredients.push({ proportion: proportionMatch[1].trim(), item: proportionMatch[2].trim() });
-            } else {
-              ingredients.push({ item: itemStr, proportion: '' });
-            }
-          }
-          if (inSteps && /^\d+\.\s+/.test(t)) {
-            steps.push(t.replace(/^\d+\.\s*/, '').trim());
-          } else if (inSteps && (t.startsWith('- ') || t.startsWith('* '))) {
-            steps.push(t.replace(/^[-*]\s*/, '').trim());
-          }
-        }
-      }
-
-      // Check for image existence if not in frontmatter
-      let imageUrl = parsed.data.imageUrl || parsedRecipe.imageUrl || '';
+      let imageUrl = r.imageUrl || '';
       if (!imageUrl) {
         try {
-          const structuredImagePath = path.join(dataDir, safeSlug, `hero.jpg`);
-          await fs.access(structuredImagePath);
+          await fs.access(path.join(dataDir, safeSlug, 'hero.jpg'));
           imageUrl = `/images/${safeSlug}/hero.jpg`;
-        } catch {
-          // File doesn't exist
-        }
+        } catch { /* no hero image */ }
       }
 
       return new Response(
-        JSON.stringify({ 
-          ...parsedRecipe,
-          ...parsed.data, 
-          slug: safeSlug, 
-          ingredients,
-          steps,
-          imageUrl,
-          content: parsed.content 
-        }),
+        JSON.stringify({ ...r, category: r.category || 'General', slug: safeSlug, imageUrl }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     } catch {
       return new Response(JSON.stringify({ error: 'Not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
+        status: 404, headers: { 'Content-Type': 'application/json' },
       });
     }
   }
@@ -124,8 +61,8 @@ export async function GET({ request }: { request: Request }) {
   const files = await walk(dataDir);
   const recipes = await Promise.all(files.map(async (fp) => {
     const raw = await fs.readFile(fp, 'utf-8');
-    const parsed = matter(raw);
-    return { slug: path.basename(fp, '.md'), ...parsed.data, content: parsed.content };
+    const r = extractRecipe(raw);
+    return { slug: path.basename(fp, '.md'), ...r, category: r.category || 'General' };
   }));
 
   return new Response(JSON.stringify(recipes), {
@@ -146,7 +83,6 @@ export async function POST({ request }: { request: Request }) {
   let finalImageUrl = imageUrl;
   
   const recipeDir = path.join(process.cwd(), 'data', 'recipes', recipeSlug);
-  await fs.mkdir(recipeDir, { recursive: true });
 
   if (imageUrl && imageUrl.startsWith('data:image/')) {
     const match = imageUrl.match(/^data:(image\/\w+);base64,(.+)$/);
@@ -156,7 +92,8 @@ export async function POST({ request }: { request: Request }) {
       const extension = mimeType.split('/')[1] || 'jpg';
       const imageFilename = `hero.${extension}`;
       const imagePathOnDisk = path.join(recipeDir, imageFilename);
-      
+
+      await fs.mkdir(recipeDir, { recursive: true });
       const buffer = Buffer.from(base64Data, 'base64');
       await fs.writeFile(imagePathOnDisk, buffer);
       
@@ -194,27 +131,26 @@ export async function POST({ request }: { request: Request }) {
     }
   }
 
-  let markdownBody = description || '';
-  if (ingredients && ingredients.length > 0) {
-    markdownBody += '\n\n## Ingredients\n\n';
-    ingredients.forEach((ing: any) => {
-      markdownBody += `- **${ing.proportion}** ${ing.item}\n`;
-    });
-  }
-  if (steps && steps.length > 0) {
-    markdownBody += '\n\n## Instructions\n\n';
-    steps.forEach((step: any, idx: number) => {
-      markdownBody += `${idx + 1}. ${step}\n`;
-    });
+  const mdFilename = `${recipeSlug}.md`;
+  const mdPath = path.join(process.cwd(), 'data', 'recipes', mdFilename);
+
+  let existingNotes = '';
+  try {
+    existingNotes = extractRecipe(await fs.readFile(mdPath, 'utf-8')).notes || '';
+  } catch {
+    // new recipe — no existing notes
   }
 
-  const fileContent = matter.stringify(markdownBody, {
-    title, category, prepTime, cookTime, yieldVal, imageUrl: finalImageUrl, miseEnPlace: finalMiseEnPlace, ingredients, steps,
+  const fileContent = serializeRecipe({
+    title, category, description,
+    prepTime, cookTime, yieldVal,
+    imageUrl: finalImageUrl, miseEnPlace: finalMiseEnPlace,
+    ingredients, steps, notes: existingNotes,
   });
-  
-  const mdFilename = `${recipeSlug}.md`;
-  await fs.writeFile(path.join(process.cwd(), 'data', 'recipes', mdFilename), fileContent);
-  
+
+  await fs.mkdir(path.join(process.cwd(), 'data', 'recipes'), { recursive: true });
+  await fs.writeFile(mdPath, fileContent);
+
   return new Response(
     JSON.stringify({ success: true, slug: recipeSlug }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
