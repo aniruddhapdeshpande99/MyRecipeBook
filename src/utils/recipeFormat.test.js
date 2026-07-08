@@ -362,3 +362,47 @@ D.
     expect(extractRecipe(raw).yieldVal).toBe('Yields 6');
   });
 });
+
+describe('heading trailing punctuation (closed ATX / colon)', () => {
+  it('parses ingredients under a closed-ATX "## Ingredients ##" heading', () => {
+    const raw = `---
+title: X
+---
+D.
+
+## Ingredients ##
+- **2** Beans
+
+## Instructions ##
+1. Cook.
+`;
+    const r = extractRecipe(raw);
+    expect(r.ingredients).toEqual([{ proportion: '2', item: 'Beans' }]);
+    expect(r.steps).toEqual(['Cook.']);
+    expect(r.notes).toBe('');
+  });
+
+  it('reads metadata from a "## Info:" block (trailing colon)', () => {
+    const raw = `---
+title: X
+---
+D.
+
+## Info:
+- 25 minutes
+- Serves 4
+
+## Ingredients
+- Beans
+`;
+    const r = extractRecipe(raw);
+    expect(r.prepTime).toBe('25 minutes');
+    expect(r.yieldVal).toBe('Serves 4');
+    expect(r.notes).toBe('');
+  });
+
+  it('derives a body title without a trailing colon', () => {
+    const raw = `# Delicious Pasta:\n\nA quick weeknight pasta.\n`;
+    expect(extractRecipe(raw).title).toBe('Delicious Pasta');
+  });
+});

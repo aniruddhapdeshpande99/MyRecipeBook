@@ -78,7 +78,7 @@ export function extractRecipe(rawContent = '') {
   // Legacy "## info" bullet block: first time-like bullet → prep, next → cook,
   // servings/yield/makes bullet → yield. (Restores old recipeParser behavior.)
   if (!prepTime || !yieldVal) {
-    const infoMatch = content.match(/##\s+info\s*\n([\s\S]*?)(?=\n##|$)/i);
+    const infoMatch = content.match(/##\s+info\s*:?\s*\r?\n([\s\S]*?)(?=\n##|$)/i);
     if (infoMatch) {
       const infoLines = infoMatch[1].split(/\r?\n/).map(l => l.trim())
         .filter(l => l.startsWith('*') || l.startsWith('-'));
@@ -125,13 +125,14 @@ function normalizeSteps(arr) {
 
 function deriveTitleFromBody(content) {
   const m = content.match(/^#\s+(.+)$/m);
-  return m ? m[1].trim() : '';
+  return m ? m[1].replace(/[\s:#]+$/, '').trim() : '';
 }
 
 function classifyHeading(line) {
-  const m = String(line).trim().match(/^(#{1,2})\s+(.+?)\s*:?\s*$/);
+  const m = String(line).trim().match(/^(#{1,2})\s+(.+)$/);
   if (!m) return null;
-  const text = m[2].trim().toLowerCase();
+  // Strip trailing whitespace, colons, and closed-ATX hashes (e.g. "## Notes ##").
+  const text = m[2].replace(/[\s:#]+$/, '').trim().toLowerCase();
   if (/^ingredients?$/.test(text)) return 'ingredients';
   if (/^(instructions?|steps?|methods?|directions?)$/.test(text)) return 'steps';
   if (/^info$/.test(text)) return 'meta';
